@@ -55,7 +55,7 @@ const OPT_SOUP_PROTEIN_REQUIRED: MenuOption = {
   minSelect: 1,
   maxSelect: 1,
   choices: [
-    { id: "vegetable", name: "Vegetable", priceDelta: 0 },
+    { id: "vegetable", name: "Vegetable", priceDelta: 1 },
     { id: "soft_tofu", name: "Soft Tofu", priceDelta: 0 },
     { id: "chicken", name: "Chicken", priceDelta: 2 },
     { id: "prawns", name: "Prawns", priceDelta: 4 },
