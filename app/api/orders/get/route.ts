@@ -2,11 +2,13 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 function getSupabase() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL; // ✅ use this (you already set it in Vercel)
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceKey) {
-    throw new Error("Missing Supabase env vars: NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+    throw new Error(
+      "Missing Supabase env vars: NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY"
+    );
   }
 
   return createClient(supabaseUrl, serviceKey, {
@@ -18,10 +20,8 @@ function getSupabase() {
 async function readOrderId(req: Request) {
   const url = new URL(req.url);
   const fromQuery = url.searchParams.get("orderId");
-
   if (fromQuery) return fromQuery;
 
-  // If POST (or any method with body)
   try {
     const body = await req.json();
     return body?.orderId as string | undefined;
@@ -68,10 +68,11 @@ export async function GET(req: Request) {
 
   const { data } = await fetchOrder(orderId);
   if (!data) return NextResponse.json({ error: "Order not found" }, { status: 404 });
+
   const { data: lineItems } = await supabase
-  .from("order_items")
-  .select("menu_item_name, qty, base_price_cents, special_instructions")
-  .eq("order_id", orderId);
+    .from("order_items")
+    .select("menu_item_name, qty, base_price_cents, special_instructions")
+    .eq("order_id", orderId);
 
   const items = (lineItems ?? []).map((it: any) => ({
     key: `${it.menu_item_name}-${it.qty}-${it.base_price_cents}`,
@@ -81,22 +82,47 @@ export async function GET(req: Request) {
     optionsSummary: it.special_instructions ?? "",
   }));
 
-  // Return normalized fields your success page expects
-  return NextResponse.json({
-    orderNumber: data.orderNumber ?? data.order_number ?? "",
-    items: items ?? [],
-    subtotal: (data.subtotal_cents ?? 0) / 100,
-    tax: (data.tax_cents ?? 0) / 100,
-    serviceFee: (data.service_fee_cents ?? 0) / 100,
-    total: (data.total_cents ?? 0) / 100,
-    pickupMode: data.pickupMode ?? data.pickup_mode ?? "asap",
-    pickupTimeISO: data.pickupTimeISO ?? data.pickup_time_iso ?? null,
-    estimateMin: data.estimateMin ?? data.estimate_min ?? null,
+  const subtotal_cents = Number(
+    data.subtotal_cents ?? Math.round(Number(data.subtotal ?? 0) * 100)
+  );
+  const tax_cents = Number(
+    data.tax_cents ?? Math.round(Number(data.tax ?? 0) * 100)
+  );
+  const service_fee_cents = Number(data.service_fee_cents ?? 0);
+  const tip_cents = Number(data.tip_cents ?? (data as any).tipCents ?? 0);
+  const total_cents = Number(
+    data.total_cents ?? Math.round(Number(data.total ?? 0) * 100)
+  );
+  const total_with_tip_cents =
+    Number((data as any).total_with_tip_cents ?? 0) || (total_cents + tip_cents);
 
-    stripe_client_secret: data.stripe_client_secret ?? data.stripe_client_secret ?? null,
+  return NextResponse.json({
+    orderNumber: (data as any).order_number ?? (data as any).orderNumber ?? "",
+    items,
+
+    // dollars
+    subtotal: subtotal_cents / 100,
+    tax: tax_cents / 100,
+    serviceFee: service_fee_cents / 100,
+    total: total_cents / 100,
+    totalWithTip: total_with_tip_cents / 100,
+
+    // cents
+    subtotal_cents,
+    tax_cents,
+    service_fee_cents,
+    tip_cents,
+    total_cents,
+    total_with_tip_cents,
+
+    pickupMode: (data as any).pickup_mode ?? (data as any).pickupMode ?? "asap",
+    pickupTimeISO: (data as any).pickup_time_iso ?? (data as any).pickupTimeISO ?? null,
+    estimateMin: (data as any).estimate_min ?? (data as any).estimateMin ?? null,
+
+    stripe_client_secret: (data as any).stripe_client_secret ?? null,
     orderId,
   });
-}
+} // ✅ THIS was missing
 
 export async function POST(req: Request) {
   return GET(req);

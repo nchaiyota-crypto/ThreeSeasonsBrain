@@ -187,19 +187,17 @@ export default function CheckoutForm() {
       setIsPaying(true);
 
       try {
-        // ✅ IMPORTANT: validate PaymentElement first (this is what triggers the card UI validation)
+        // ✅ validate PaymentElement first (shows card validation UI)
         const { error: submitError } = await elements.submit();
         if (submitError) {
           setMessage(submitError.message ?? "Please check your payment details.");
           return;
         }
-        
+
         const origin = window.location.origin;
 
-        // ✅ IMPORTANT: match your real route
-        // If your file is app/checkout/success/page.tsx use "/checkout/success"
-        // If your file is app/success/page.tsx use "/success"
-        const successPath = "/checkout/success"; // <-- CHANGE if needed
+        // ✅ MUST match your actual route
+        const successPath = "/checkout/success"; // change if needed
         const returnUrl = `${origin}${successPath}?orderId=${encodeURIComponent(orderId)}`;
 
         const result = await stripe.confirmPayment({
@@ -216,16 +214,25 @@ export default function CheckoutForm() {
           return;
         }
 
-        // ✅ If Stripe didn't redirect automatically, we MUST do it
-        // Sometimes result.paymentIntent is undefined even when it worked.
+        // Safari/iPhone: sometimes paymentIntent is undefined even when payment succeeded
         const status = result.paymentIntent?.status;
 
         if (status === "succeeded" || status === "processing" || !status) {
-          window.location.assign(returnUrl);
+          window.location.href = returnUrl;
+
+          // fallback: if still not on success page, try again
+          setTimeout(() => {
+            if (!window.location.pathname.includes(successPath)) {
+              window.location.href = returnUrl;
+            }
+          }, 800);
+
           return;
         }
 
         setMessage(`Payment status: ${status}`);
+      } catch (err: any) {
+        setMessage(err?.message ?? "Payment error. Please try again.");
       } finally {
         setIsPaying(false);
       }

@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
-const SERVICE_FEE_RATE = 0.13; // 13%
+const SERVICE_FEE_RATE = 0.035; // 3.5%
 
 function must(name: string) {
   const v = process.env[name];

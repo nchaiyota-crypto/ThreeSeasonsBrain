@@ -17,13 +17,17 @@ type Order = {
   items: any[];
   subtotal: number;
   tax: number;
-  serviceFee?: number; // dollars
-  // total = subtotal + tax (base)
+
+  // total = subtotal + tax + service fee (server truth)
   total: number;
 
+  // ✅ add these
+  service_fee_cents?: number; // cents (from DB)
+  total_cents?: number;       // cents (from DB)
+
   // ✅ Tip support
-  tipCents?: number;        // stored as cents
-  totalWithTip?: number;    // stored as dollars
+  tipCents?: number;        // cents
+  totalWithTip?: number;    // dollars
 
   pickupMode: "asap" | "schedule";
   pickupDate?: string;
@@ -217,6 +221,21 @@ export default function CheckoutSuccess() {
               ? (last as any).totalWithTip
               : (mergedTotal + mergedTipCents / 100);
 
+
+        // ✅ SERVICE FEE merge (prefer Supabase; fallback to local)
+        const mergedServiceFeeCents =
+          typeof supa?.service_fee_cents === "number"
+            ? supa.service_fee_cents
+            : typeof (last as any)?.service_fee_cents === "number"
+              ? (last as any).service_fee_cents
+              : 0;
+
+        // ✅ total cents (for exact display math)
+        const mergedTotalCents =
+          typeof supa?.total_cents === "number"
+            ? supa.total_cents
+            : Math.round(mergedTotal * 100);      
+
         const finalOrder: Order = {
           ...last,
           orderId: targetOrderId,
@@ -225,6 +244,8 @@ export default function CheckoutSuccess() {
           subtotal: mergedSubtotal,
           tax: mergedTax,
           total: mergedTotal,
+          service_fee_cents: mergedServiceFeeCents,
+          total_cents: mergedTotalCents,
           tipCents: mergedTipCents,
           totalWithTip: mergedTotalWithTip,
           pickupMode: (supa?.pickupMode ?? last.pickupMode ?? "asap") as any,
@@ -323,6 +344,13 @@ export default function CheckoutSuccess() {
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
             <div style={{ opacity: 0.75 }}>Tip</div>
             <div style={{ fontWeight: 900 }}>${((order.tipCents ?? 0) / 100).toFixed(2)}</div>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+            <div style={{ opacity: 0.75 }}>Online Service Fee</div>
+            <div style={{ fontWeight: 900 }}>
+              ${((order.service_fee_cents ?? 0) / 100).toFixed(2)}
+            </div>
           </div>
 
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 0 }}>

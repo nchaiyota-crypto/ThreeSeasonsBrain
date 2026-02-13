@@ -55,7 +55,7 @@ const OPT_SOUP_PROTEIN_REQUIRED: MenuOption = {
   minSelect: 1,
   maxSelect: 1,
   choices: [
-    { id: "vegetable", name: "Vegetable", priceDelta: 1 },
+    { id: "vegetable", name: "Vegetable", priceDelta: 0 },
     { id: "soft_tofu", name: "Soft Tofu", priceDelta: 0 },
     { id: "chicken", name: "Chicken", priceDelta: 2 },
     { id: "prawns", name: "Prawns", priceDelta: 4 },
@@ -363,15 +363,6 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     description: "Golden fried flat wings topped with crispy lemongrass and kaffir lime leaves",
     price: 18.0,
     category: "House Specials",
-  }),
-
-  makeItem({
-    id: "crispy_shrimp_cheese_rolls",
-    name: "Crispy Shrimp Cheese Rolls (4 pcs)",
-    description: "Marinated shrimp with mozzarella cheese in egg roll wrapper",
-    price: 16.0,
-    category: "House Specials",
-    imageUrl: "/images/menu/crispy_shrimp_cheese_rolls.jpg",
   }),
 
   makeItem({

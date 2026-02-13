@@ -8,6 +8,14 @@ export default function HomePage() {
   const [paused, setPaused] = useState(false);
   const [pauseMessage, setPauseMessage] = useState("");
   const [ws, setWs] = useState<GetWaitStatusResponse | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -52,8 +60,8 @@ export default function HomePage() {
         style={{
           position: "relative",
           width: "100%",
-          height: "72vh",
-          minHeight: 520,
+          height: isMobile ? "64vh" : "72vh",
+          minHeight: isMobile ? 420 : 520,
           background: "#111",
           overflow: "hidden",
         }}
@@ -89,7 +97,7 @@ export default function HomePage() {
             position: "relative",
             maxWidth: 1200,
             margin: "0 auto",
-            padding: "80px 18px",
+            padding: isMobile ? "56px 16px" : "80px 18px",
             color: "#fff",
           }}
         >
@@ -98,7 +106,14 @@ export default function HomePage() {
               Best Thai Food in Oakland, CA
             </div>
 
-            <h1 style={{ fontSize: 52, lineHeight: 1.05, margin: 0, fontWeight: 950 }}>
+            <h1
+                style={{
+                  fontSize: isMobile ? 34 : 52,
+                  lineHeight: isMobile ? 1.12 : 1.05,
+                  margin: 0,
+                  fontWeight: 950,
+                }}
+              >
               Savor Every Bite of Authentic Thai Cuisine,
               <br />
               Made Fresh Daily.
@@ -194,9 +209,16 @@ export default function HomePage() {
       {/* WELCOME SECTION */}
       <section id="story" style={{ padding: "54px 18px" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 28, alignItems: "center" }}>
+          <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isMobile ? "1fr" : "1.2fr 1fr",
+                gap: isMobile ? 18 : 28,
+                alignItems: "center",
+              }}
+            >
             <div>
-              <div style={{ fontSize: 44, fontWeight: 950, marginBottom: 10 }}>Welcome to 3 Seasons Thai Bistro</div>
+              <div style={{ fontSize: isMobile ? 30 : 44, fontWeight: 950, marginBottom: 10 }}>Welcome to 3 Seasons Thai Bistro</div>
               <p style={{ fontSize: 16, lineHeight: 1.7, color: "#333", margin: 0 }}>
                 Located in the heart of Oakland, we serve flavorful Thai dishes that are fresh,
                 comforting, and easy to enjoy. Whether you’re craving curry, noodles, or house specials —

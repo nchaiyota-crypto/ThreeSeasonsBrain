@@ -17,28 +17,47 @@ export default function CheckoutForm() {
   const [tipPreset, setTipPreset] = useState<number>(0); // percent: 0, 15, 18, 20
   const [tipCustom, setTipCustom] = useState<string>(""); // dollars as string
   const [baseTotal, setBaseTotal] = useState<number>(0);
-  
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [smsOptIn, setSmsOptIn] = useState(true);
+  const [subtotal, setSubtotal] = useState<number>(0);
+  const [tax, setTax] = useState<number>(0);
+  const [serviceFee, setServiceFee] = useState<number>(0);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    
+
     const raw = localStorage.getItem("last_order");
-    if (raw) {
-      try {
-        const o = JSON.parse(raw);
-        if (o?.customerName) setCustomerName(o.customerName);
-        setBaseTotal(Number(o?.total ?? 0));
-      } catch {}
-    }
+    if (!raw) return;
+
+    try {
+  const o = JSON.parse(raw);
+
+  if (o?.customerName) setCustomerName(o.customerName);
+  if (o?.customerPhone) setCustomerPhone(o.customerPhone);
+  if (typeof o?.smsOptIn === "boolean") setSmsOptIn(o.smsOptIn);
+
+  // ✅ pull amounts from last_order
+  const sub = Number(o?.subtotal ?? 0);
+  const tx = Number(o?.tax ?? 0);
+  const fee = Number(o?.serviceFee ?? o?.service_fee ?? o?.onlineServiceFee ?? 0);
+  const base = +(sub + tx + fee).toFixed(2);
+
+  setSubtotal(sub);
+  setTax(tx);
+  setServiceFee(fee);
+  setBaseTotal(base);
+  } catch {
+    // ignore
+  }
   }, []);
 
     // ✅ Read base total from last_order (what Stripe is currently charging)
   const tipAmount =
     tipCustom.trim() !== ""
       ? Math.max(0, Number(tipCustom))
-      : tipPreset > 0
-        ? (baseTotal * tipPreset) / 100
-        : 0;
+        : tipPreset > 0
+          ? (subtotal * tipPreset) / 100
+          : 0;
 
   const finalTotal = baseTotal + tipAmount;
   const tipCents = Math.round(tipAmount * 100);
@@ -53,6 +72,17 @@ export default function CheckoutForm() {
     );
   }
 
+  function normalizeUSPhone(input: string): string | null {
+    const digits = (input || "").replace(/\D/g, "");
+
+    // 10 digits => US local
+    if (digits.length === 10) return `+1${digits}`;
+
+    // 11 digits starting with 1 => already includes country code
+    if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+
+    return null; // invalid
+  }
   async function handlePay(e?: React.FormEvent) {
     e?.preventDefault();
     setMessage("");
@@ -84,6 +114,30 @@ export default function CheckoutForm() {
       setMessage("Missing orderId. Please go back and try again.");
       return;
     }
+    const phoneE164 = normalizeUSPhone(customerPhone);
+
+    // If they want SMS, phone must be valid
+    if (smsOptIn && !phoneE164) {
+      setMessage("Please enter a valid US phone number (ex: 415-499-2031).");
+      return;
+    }
+
+        // ✅ Save customer name/phone/opt-in to Supabase BEFORE payment
+    try {
+      await fetch("/api/orders/customer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId,
+          customerName: name,
+          customerPhone: phoneE164, // ✅ normalized
+          smsOptIn,
+        }),
+      });
+    } catch (e) {
+      console.warn("Failed to save customer info:", e);
+      // don't block payment for this
+    }
 
         // ✅ REAL TIP: update PaymentIntent amount BEFORE confirmPayment
     if (tipCents > 0) {
@@ -100,167 +154,228 @@ export default function CheckoutForm() {
         return;
       }
 
+      // ✅ STEP 3: refresh Stripe PaymentElement after PI amount changes
+      await elements.fetchUpdates();
+
       // optional: store tip in last_order so success page can show it
       try {
         const raw2 = localStorage.getItem("last_order");
         if (raw2) {
           const o2 = JSON.parse(raw2);
           o2.tipCents = tipCents;
-          o2.totalWithTip = (Number(o2.total ?? 0) + tipCents / 100);
+          o2.totalWithTip = Number(o2.total ?? 0) + tipCents / 100;
           localStorage.setItem("last_order", JSON.stringify(o2));
         }
       } catch {}
+    
+      // IMPORTANT: Stripe PaymentElement must refresh after PI amount changes
     }
 
-    // ✅ Persist name
+    // ✅ Persist customer info (name + phone + sms opt-in)
     try {
       const raw = localStorage.getItem("last_order");
-      if (raw) {
-        const o = JSON.parse(raw);
-        o.customerName = name;
-        localStorage.setItem("last_order", JSON.stringify(o));
+        if (raw) {
+          const o = JSON.parse(raw);
+          o.customerName = name;
+          o.customerPhone = phoneE164 ?? ""; // ✅ normalized (or blank)
+          o.smsOptIn = smsOptIn;
+          localStorage.setItem("last_order", JSON.stringify(o));
+        }
+      } catch {}
+
+      if (isPaying) return;
+      setIsPaying(true);
+
+      try {
+        // ✅ IMPORTANT: validate PaymentElement first (this is what triggers the card UI validation)
+        const { error: submitError } = await elements.submit();
+        if (submitError) {
+          setMessage(submitError.message ?? "Please check your payment details.");
+          return;
+        }
+        
+        const origin = window.location.origin;
+
+        // ✅ IMPORTANT: match your real route
+        // If your file is app/checkout/success/page.tsx use "/checkout/success"
+        // If your file is app/success/page.tsx use "/success"
+        const successPath = "/checkout/success"; // <-- CHANGE if needed
+        const returnUrl = `${origin}${successPath}?orderId=${encodeURIComponent(orderId)}`;
+
+        const result = await stripe.confirmPayment({
+          elements,
+          confirmParams: {
+            payment_method_data: { billing_details: { name } },
+            return_url: returnUrl,
+          },
+          redirect: "if_required",
+        });
+
+        if (result.error) {
+          setMessage(result.error.message ?? "Payment failed");
+          return;
+        }
+
+        // ✅ If Stripe didn't redirect automatically, we MUST do it
+        // Sometimes result.paymentIntent is undefined even when it worked.
+        const status = result.paymentIntent?.status;
+
+        if (status === "succeeded" || status === "processing" || !status) {
+          window.location.assign(returnUrl);
+          return;
+        }
+
+        setMessage(`Payment status: ${status}`);
+      } finally {
+        setIsPaying(false);
       }
-    } catch {}
-
-    if (isPaying) return;
-    setIsPaying(true);
-
-    try {
-      const { error, paymentIntent } = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          payment_method_data: { billing_details: { name } },
-          return_url: `${window.location.origin}/checkout/success?orderId=${encodeURIComponent(orderId)}`,
-        },
-        redirect: "if_required", // ✅ best for cards (no redirect), still supports redirect methods
-      });
-
-      if (error) {
-        setMessage(error.message ?? "Payment failed");
-        return;
-      }
-
-      // ✅ If Stripe did NOT redirect (card payments usually don't), we redirect ourselves
-      if (paymentIntent?.status === "succeeded" || paymentIntent?.status === "processing") {
-        window.location.href = `/checkout/success?orderId=${encodeURIComponent(orderId)}`;
-        return;
-      }
-
-      // Rare statuses
-      setMessage(`Payment status: ${paymentIntent?.status ?? "unknown"}`);
-
-    } finally {
-      setIsPaying(false);
-    }
   }
 
-  return (
-    <form onSubmit={handlePay} style={{ display: "grid", gap: 14 }}>
-      <div style={{ fontWeight: 900, fontSize: 14 }}>Customer</div>
+      return (
+          <form onSubmit={handlePay} style={{ display: "grid", gap: 14 }}>
+            <div style={{ fontWeight: 900, fontSize: 14 }}>Customer</div>
 
-      <div style={{ display: "grid", gap: 6 }}>
-        <label style={{ fontSize: 13, fontWeight: 800, opacity: 0.8 }}>Full name</label>
-        <input
-          value={customerName}
-          onChange={(e) => setCustomerName(e.target.value)}
-          placeholder="e.g. Narin Chaiyota"
-          style={{
-            height: 44,
-            borderRadius: 12,
-            border: nameError ? "1px solid #e11d48" : "1px solid #e5e5e5",
-            padding: "0 12px",
-            outline: "none",
-            background: "#fff",
-            fontWeight: 700,
-          }}
-        />
-        {nameError ? <div style={{ color: "#e11d48", fontSize: 12 }}>{nameError}</div> : null}
-      </div>
+            <div style={{ display: "grid", gap: 6 }}>
+              <label style={{ fontSize: 13, fontWeight: 800, opacity: 0.8 }}>Full name</label>
+              <input
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="e.g. Narin Chaiyota"
+                style={{
+                  height: 44,
+                  borderRadius: 12,
+                  border: nameError ? "1px solid #e11d48" : "1px solid #e5e5e5",
+                  padding: "0 12px",
+                  outline: "none",
+                  background: "#fff",
+                  fontWeight: 700,
+                }}
+              />
+              {nameError ? <div style={{ color: "#e11d48", fontSize: 12 }}>{nameError}</div> : null}
+            </div>
+            {/* ✅ Phone + SMS opt-in */}
+            <div style={{ display: "grid", gap: 6 }}>
+              <label style={{ fontSize: 13, fontWeight: 800, opacity: 0.8 }}>
+                Phone (for pickup SMS)
+              </label>
 
-            {/* ✅ Tip */}
-      <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Tip</div>
+              <input
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                placeholder="e.g. 415-499-2031"
+                style={{
+                  height: 44,
+                  borderRadius: 12,
+                  border: "1px solid #e5e5e5",
+                  padding: "0 12px",
+                  outline: "none",
+                  background: "#fff",
+                  fontWeight: 700,
+                }}
+              />
 
-      <div style={{ display: "flex", gap: 8 }}>
-        {[0, 15, 18, 20].map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => {
-              setTipPreset(p);
-              setTipCustom("");
-            }}
-            style={{
-              flex: 1,
-              height: 40,
-              borderRadius: 12,
-              border: tipPreset === p && tipCustom === "" ? "2px solid #000" : "1px solid #e5e5e5",
-              background: "#fff",
-              fontWeight: 900,
-              cursor: "pointer",
-            }}
-          >
-            {p === 0 ? "No tip" : `${p}%`}
-          </button>
-        ))}
-      </div>
+              <label
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  alignItems: "center",
+                  fontSize: 12,
+                  opacity: 0.8,
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={smsOptIn}
+                  onChange={(e) => setSmsOptIn(e.target.checked)}
+                />
+                Text me order confirmation and pickup updates.
+              </label>
+            </div>
 
-      <div style={{ display: "grid", gap: 6 }}>
-        <label style={{ fontSize: 13, fontWeight: 800, opacity: 0.8 }}>Custom tip ($)</label>
-        <input
-          inputMode="decimal"
-          value={tipCustom}
-          onChange={(e) => {
-            setTipCustom(e.target.value);
-            setTipPreset(0);
-          }}
-          placeholder="e.g. 5"
-          style={{
-            height: 44,
-            borderRadius: 12,
-            border: "1px solid #e5e5e5",
-            padding: "0 12px",
-            outline: "none",
-            background: "#fff",
-            fontWeight: 700,
-          }}
-        />
-      </div>
+                  {/* ✅ Tip */}
+            <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Tip</div>
 
-      {/* ✅ Tip + Total preview */}
-      <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 900 }}>
-        <div>Tip</div>
-        <div>${tipAmount.toFixed(2)}</div>
-      </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              {[0, 15, 18, 20].map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => {
+                    setTipPreset(p);
+                    setTipCustom("");
+                  }}
+                  style={{
+                    flex: 1,
+                    height: 40,
+                    borderRadius: 12,
+                    border: tipPreset === p && tipCustom === "" ? "2px solid #000" : "1px solid #e5e5e5",
+                    background: "#fff",
+                    fontWeight: 900,
+                    cursor: "pointer",
+                  }}
+                >
+                  {p === 0 ? "No tip" : `${p}%`}
+                </button>
+              ))}
+            </div>
 
-      <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 900 }}>
-        <div>Total (with tip)</div>
-        <div>${finalTotal.toFixed(2)}</div>
-      </div>
+            <div style={{ display: "grid", gap: 6 }}>
+              <label style={{ fontSize: 13, fontWeight: 800, opacity: 0.8 }}>Custom tip ($)</label>
+              <input
+                inputMode="decimal"
+                value={tipCustom}
+                onChange={(e) => {
+                  setTipCustom(e.target.value);
+                  setTipPreset(0);
+                }}
+                placeholder="e.g. 5"
+                style={{
+                  height: 44,
+                  borderRadius: 12,
+                  border: "1px solid #e5e5e5",
+                  padding: "0 12px",
+                  outline: "none",
+                  background: "#fff",
+                  fontWeight: 700,
+                }}
+              />
+            </div>
 
-      <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Payment</div>
+            {/* ✅ Tip + Total preview */}
+            <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 900 }}>
+              <div>Tip</div>
+              <div>${tipAmount.toFixed(2)}</div>
+            </div>
 
-      <div style={{ padding: 12, border: "1px solid #eee", borderRadius: 14 }}>
-        <PaymentElement />
-      </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 900 }}>
+              <div>Total (with tip)</div>
+              <div>${finalTotal.toFixed(2)}</div>
+            </div>
 
-      <button
-        type="submit" 
-        disabled={isPaying}
-        style={{
-          height: 48,
-          borderRadius: 14,
-          border: "none",
-          background: "#000",
-          color: "#fff",
-          fontWeight: 900,
-          cursor: "pointer",
-          opacity: isPaying ? 0.6 : 1,
-        }}
-      >
-        {isPaying ? "Processing..." : "Pay now"}
-      </button>
+            <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Payment</div>
 
-      {message ? <div style={{ color: "crimson", fontSize: 13 }}>{message}</div> : null}
-    </form>
-  );
+            <div style={{ padding: 12, border: "1px solid #eee", borderRadius: 14 }}>
+              <PaymentElement />
+            </div>
+
+            <button
+              type="submit" 
+              disabled={isPaying}
+              style={{
+                height: 48,
+                borderRadius: 14,
+                border: "none",
+                background: "#000",
+                color: "#fff",
+                fontWeight: 900,
+                cursor: "pointer",
+                opacity: isPaying ? 0.6 : 1,
+              }}
+            >
+              {isPaying ? "Processing..." : "Pay now"}
+            </button>
+
+            {message ? <div style={{ color: "crimson", fontSize: 13 }}>{message}</div> : null}
+          </form>
+        );
 }

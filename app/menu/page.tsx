@@ -17,7 +17,7 @@ type CartLine = {
 };
 
 const TAX_RATE = 0.1075; // Oakland 10.75%
-const SERVICE_FEE_RATE = 0.13; // must match your backend (example: 3.25 -> 0.42)
+const SERVICE_FEE_RATE = 0.035; // must match your backend (example: 3.25 -> 0.42)
 const CART_KEY = "three_seasons_cart_v1";
 const CART_TTL_MS = 1 * 60 * 60 * 1000; // 1 hour
 const PICKUP_KEY = "three_seasons_pickup_v1";
@@ -407,6 +407,30 @@ export default function MenuPage() {
     cart.length > 0 &&
     !orderingPaused &&
     (pickupMode === "asap" ? !isStoreClosedNow : scheduleSelected && scheduleTimeIsValid);
+  
+    //Mobile friendly
+  const [isMobile, setIsMobile] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 900px)");
+    const apply = () => setIsMobile(mq.matches);
+    apply();
+    mq.addEventListener?.("change", apply);
+    return () => mq.removeEventListener?.("change", apply);
+  }, []);
+
+  // MOBILE: force ASAP so checkout works (until pickup UI is added to mobile sheet)
+  useEffect(() => {
+    if (!isMobile) return;
+    setPickupMode("asap");
+    setPickupTimeISO(""); // clear any stale schedule time
+  }, [isMobile]);
+
+  // If user switches to desktop, close the bottom sheet
+  useEffect(() => {
+    if (!isMobile) setCartOpen(false);
+  }, [isMobile]);
 
   // ✅ Restore cart on first load
   useEffect(() => {
@@ -574,6 +598,7 @@ export default function MenuPage() {
     setStepIndex(0);
     setQty(1);
     setSelected({});
+    setCartOpen(false);
     setIsModalOpen(true);
   }
 
@@ -760,7 +785,7 @@ export default function MenuPage() {
   const totalQtyInCart = useMemo(() => cart.reduce((sum, l) => sum + l.qty, 0), [cart]);
 
   return (
-    <div style={{ height: "100vh", background: "#f6f6f6" }}>
+    <div style={{ minHeight: "100dvh", background: "#f6f6f6" }}>
       <div
         style={{
           maxWidth: 1200,
@@ -783,7 +808,7 @@ export default function MenuPage() {
           }}
         >
           <div>
-            <div style={{ fontSize: 28, fontWeight: 900 }}>3 Seasons Thai Bistro</div>
+            <div style={{ fontSize: isMobile ? 22 : 28, fontWeight: 900 }}>3 Seasons Thai Bistro</div>
             <div style={{ opacity: 0.7, marginTop: 4 }}>Menu (MVP) — step-by-step options wizard</div>
           </div>
 
@@ -814,7 +839,7 @@ export default function MenuPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "260px 1fr 280px",
+            gridTemplateColumns: isMobile ? "1fr" : "260px 1fr 280px",
             gap: 14,
             alignItems: "start",
             flex: 1,
@@ -893,7 +918,13 @@ export default function MenuPage() {
             {filteredItems.length === 0 ? (
               <div style={{ opacity: 0.7 }}>No items found for this category/search.</div>
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(0, 1fr))",
+                  gap: 12,
+                }}
+              >
                 {filteredItems.map((item) => (
                   <div
                     key={item.id}
@@ -950,17 +981,18 @@ export default function MenuPage() {
           </div>
 
           {/* RIGHT */}
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 16,
-              border: "1px solid #e8e8e8",
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
-              minHeight: 0, // important so the scroll area can shrink
-            }}
-          >
+          {!isMobile && (
+            <div
+              style={{
+                background: "#fff",
+                borderRadius: 16,
+                border: "1px solid #e8e8e8",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                minHeight: 0,
+              }}
+              >
             {/* Scrollable body */}
             <div
               style={{
@@ -1033,7 +1065,8 @@ export default function MenuPage() {
                         style={{
                           marginTop: 10,
                           display: "flex",
-                          alignItems: "center",
+                          flexDirection: isMobile ? "column" : "row",
+                          alignItems: isMobile ? "flex-start" : "center",
                           justifyContent: "space-between",
                           gap: 12,
                         }}
@@ -1296,7 +1329,243 @@ export default function MenuPage() {
               </div>
             </div>
           </div>
+          )}
         </div>
+        {/* MOBILE CART BAR (sticky) */}
+        {isMobile && (
+          <div
+            style={{
+              position: "fixed",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              padding: 12,
+              background: "rgba(246,246,246,0.92)",
+              backdropFilter: "blur(8px)",
+              borderTop: "1px solid #e8e8e8",
+              zIndex: 8000,
+              pointerEvents: "auto",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setCartOpen(true)}
+              style={{
+                width: "100%",
+                height: 52,
+                borderRadius: 16,
+                border: "none",
+                background: "#000",
+                color: "#fff",
+                fontWeight: 900,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "0 14px",
+                cursor: "pointer",
+              }}
+            >
+              <span>Cart ({totalQtyInCart})</span>
+              <span>${money(total)}</span>
+            </button>
+          </div>
+        )}  
+
+        {/* MOBILE CART SHEET (Owner-style) */}
+        {isMobile && cartOpen && (
+          <div
+            onClick={() => setCartOpen(false)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.35)",
+              zIndex: 9000,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "flex-end",
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: "100%",
+                maxWidth: 520,
+                background: "#fff",
+                borderTopLeftRadius: 18,
+                borderTopRightRadius: 18,
+                border: "1px solid rgba(0,0,0,0.08)",
+                maxHeight: "85dvh",
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+              }}
+            >
+              {/* Grab handle + header */}
+              <div style={{ padding: 12, borderBottom: "1px solid #eee" }}>
+                <div style={{ width: 44, height: 5, borderRadius: 999, background: "#ddd", margin: "0 auto 10px" }} />
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ fontWeight: 900, fontSize: 18 }}>Your Cart</div>
+                  <button
+                    type="button"
+                    onClick={() => setCartOpen(false)}
+                    style={{ border: "none", background: "transparent", fontWeight: 900, cursor: "pointer", opacity: 0.7 }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              {/* Scrollable cart body */}
+              <div style={{ padding: 12, overflowY: "auto", flex: 1 }}>
+                {cart.length === 0 ? (
+                  <div style={{ opacity: 0.7 }}>Your cart is empty.</div>
+                ) : (
+                  <div style={{ display: "grid", gap: 10 }}>
+                    {cart.map((line) => (
+                      <div
+                        key={line.key}
+                        style={{ border: "1px solid #eee", borderRadius: 14, padding: 10, background: "#fff" }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                          <div style={{ fontWeight: 900 }}>{line.name}</div>
+                          <button
+                            type="button"
+                            onClick={() => removeLine(line.key)}
+                            style={{ border: "none", background: "transparent", cursor: "pointer", fontWeight: 900, opacity: 0.6 }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+
+                        {line.optionsSummary ? (
+                          <div style={{ marginTop: 6, fontSize: 12, opacity: 0.75 }}>{line.optionsSummary}</div>
+                        ) : null}
+
+                        <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <button
+                              type="button"
+                              onClick={() => changeLineQty(line.key, -1)}
+                              style={{
+                                width: 34,
+                                height: 34,
+                                borderRadius: 10,
+                                border: "1px solid #ddd",
+                                background: "#fff",
+                                cursor: "pointer",
+                                fontWeight: 900,
+                              }}
+                            >
+                              –
+                            </button>
+
+                            <div style={{ minWidth: 18, textAlign: "center", fontWeight: 900 }}>{line.qty}</div>
+
+                            <button
+                              type="button"
+                              onClick={() => changeLineQty(line.key, +1)}
+                              style={{
+                                width: 34,
+                                height: 34,
+                                borderRadius: 10,
+                                border: "1px solid #ddd",
+                                background: "#fff",
+                                cursor: "pointer",
+                                fontWeight: 900,
+                              }}
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          <div style={{ fontWeight: 900 }}>${money(line.unitPrice * line.qty)}</div>
+                        </div>
+                      </div>
+                    ))}
+
+                    <div style={{ borderTop: "1px solid #eee", paddingTop: 10 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                        <div style={{ opacity: 0.75 }}>Subtotal</div>
+                        <div style={{ fontWeight: 900 }}>${money(subtotal)}</div>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                        <div style={{ opacity: 0.75 }}>Tax</div>
+                        <div style={{ fontWeight: 900 }}>${money(tax)}</div>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                        <div style={{ opacity: 0.75 }}>Online Service Fee</div>
+                        <div style={{ fontWeight: 900 }}>${money(serviceFee)}</div>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10 }}>
+                        <div style={{ fontWeight: 900 }}>Total</div>
+                        <div style={{ fontWeight: 900 }}>${money(total)}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Sticky sheet footer */}
+              <div style={{ padding: 12, borderTop: "1px solid #eee", background: "#fff" }}>
+                <button
+                  type="button"
+                  disabled={!canCheckout}
+                  onClick={async () => {
+                    saveLastOrder();
+
+                    const raw = localStorage.getItem("last_order");
+                    if (!raw) {
+                      alert("Missing last_order");
+                      return;
+                    }
+
+                    const payload = JSON.parse(raw);
+
+                    const res = await fetch("/api/create-order", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(payload),
+                    });
+
+                    let data: any = null;
+                    let text = "";
+                    try {
+                      text = await res.text();
+                      data = text ? JSON.parse(text) : null;
+                    } catch {
+                      data = { raw: text };
+                    }
+
+                    if (!res.ok) {
+                      console.error("create-order failed:", { status: res.status, data });
+                      alert(`Create order failed (${res.status}): ${data?.error ?? data?.raw ?? "Unknown"}`);
+                      return;
+                    }
+
+                    payload.orderId = data.orderId;
+                    localStorage.setItem("last_order", JSON.stringify(payload));
+
+                    setCartOpen(false);
+                    router.push("/checkout");
+                  }}
+                  style={{
+                    width: "100%",
+                    height: 50,
+                    borderRadius: 14,
+                    border: "none",
+                    background: "#000",
+                    color: "#fff",
+                    fontWeight: 900,
+                    cursor: canCheckout ? "pointer" : "not-allowed",
+                    opacity: canCheckout ? 1 : 0.5,
+                  }}
+                >
+                  Ready to Checkout • ${money(total)}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* WIZARD MODAL */}
         {isModalOpen && activeItem && steps.length > 0 && (
