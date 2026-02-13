@@ -17,7 +17,7 @@ type Order = {
   items: any[];
   subtotal: number;
   tax: number;
-
+  serviceFee?: number; // dollars
   // total = subtotal + tax (base)
   total: number;
 

@@ -114,21 +114,6 @@ useEffect(() => {
 
   return (
     <>
-      {order ? (
-        <div
-          style={{
-            marginBottom: 14,
-            padding: 12,
-            border: "1px solid #eee",
-            borderRadius: 12,
-            background: "#fafafa",
-          }}
-        >
-          <div style={{ fontWeight: 900 }}>Total: ${Number(order.total).toFixed(2)}</div>
-          {order.orderId ? <div style={{ fontSize: 12, opacity: 0.7 }}>Order ID: {order.orderId}</div> : null}
-        </div>
-      ) : null}
-
       <Elements stripe={stripePromise} options={options}>
         <CheckoutForm />
       </Elements>

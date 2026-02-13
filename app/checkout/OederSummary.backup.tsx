@@ -56,11 +56,6 @@ export default function OrderSummary() {
         </div>
       </div>
 
-      <div style={{ marginTop: 10, display: "flex", gap: 12, fontSize: 13, opacity: 0.85 }}>
-        <div>Subtotal ${money(order.subtotal ?? 0)}</div>
-        <div>Tax ${money(order.tax ?? 0)}</div>
-      </div>
-
       <div style={{ marginTop: 12, borderTop: "1px solid #eaeaea", paddingTop: 10, display: "grid", gap: 8 }}>
         {(order.items ?? []).map((it) => (
           <div key={it.key}>

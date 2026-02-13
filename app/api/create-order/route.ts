@@ -37,7 +37,8 @@ export async function POST(req: Request) {
     .insert({
         source: "online",
         order_type: "takeout", // dine_in, takeout, phone
-        status: "draft",       // keep draft until payment succeeds
+        status: "draft",
+        payment_status: "unpaid",       // keep draft until payment succeeds
 
         // ✅ write BOTH numeric + cents (your schema has both)
         subtotal,
@@ -46,9 +47,6 @@ export async function POST(req: Request) {
         subtotal_cents: subtotalCents,
         tax_cents: taxCents,
         total_cents: totalCents,
-
-        // ✅ set payment status so downstream filters work
-        payment_status: "requires_payment",
 
         // ✅ your items column
         items_json: body.items,
