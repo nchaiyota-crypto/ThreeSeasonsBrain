@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
+const SERVICE_FEE_RATE = 0.13; // 13%
 
 function must(name: string) {
   const v = process.env[name];
@@ -26,11 +27,17 @@ export async function POST(req: Request) {
 
     const subtotal = Number(body.subtotal ?? 0);
     const tax = Number(body.tax ?? 0);
-    const total = Number(body.total ?? 0);
 
+    // ✅ server is source of truth for fee + total
     const subtotalCents = Math.round(subtotal * 100);
     const taxCents = Math.round(tax * 100);
-    const totalCents = Math.round(total * 100);
+
+    // ✅ 13% fee
+    const serviceFeeCents = Math.round(subtotalCents * SERVICE_FEE_RATE);
+
+    // ✅ total BEFORE tip
+    const totalCents = subtotalCents + taxCents + serviceFeeCents;
+    const total = totalCents / 100;
 
     const { data, error } = await supabase
     .from("orders")
@@ -46,6 +53,7 @@ export async function POST(req: Request) {
         total,
         subtotal_cents: subtotalCents,
         tax_cents: taxCents,
+        service_fee_cents: serviceFeeCents,
         total_cents: totalCents,
 
         // ✅ your items column

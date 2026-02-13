@@ -17,6 +17,7 @@ type CartLine = {
 };
 
 const TAX_RATE = 0.1075; // Oakland 10.75%
+const SERVICE_FEE_RATE = 0.13; // must match your backend (example: 3.25 -> 0.42)
 const CART_KEY = "three_seasons_cart_v1";
 const CART_TTL_MS = 1 * 60 * 60 * 1000; // 1 hour
 const PICKUP_KEY = "three_seasons_pickup_v1";
@@ -147,16 +148,16 @@ function choiceById(opt: MenuOption, choiceId: string | null) {
   return opt.choices.find((c) => c.id === choiceId) ?? null;
 }
 
-function sumSelectedDeltaCents(item: MenuItem, selected: Record<string, string[]>) {
-  let cents = 0;
+function sumSelectedDeltaDollars(item: MenuItem, selected: Record<string, string[]>) {
+  let dollars = 0;
   for (const opt of item.options ?? []) {
     const picked = selected[opt.id] ?? [];
     for (const cid of picked) {
       const ch = opt.choices.find((c) => c.id === cid);
-      if (ch) cents += ch.priceDelta ?? 0;
+      if (ch) dollars += Number(ch.priceDelta ?? 0);
     }
   }
-  return cents;
+  return dollars;
 }
 
 function buildOptionsSummary(item: MenuItem, selected: Record<string, string[]>) {
@@ -167,7 +168,7 @@ function buildOptionsSummary(item: MenuItem, selected: Record<string, string[]>)
     const cid = (selected[reqProtein.id] ?? [])[0] ?? null;
     const ch = choiceById(reqProtein, cid);
     if (ch) {
-      const extra = ch.priceDelta ? ` (+$${money(ch.priceDelta / 100)})` : "";
+      const extra = ch.priceDelta ? ` (+$${money(ch.priceDelta)})` : "";
       parts.push(`Protein: ${ch.name}${extra}`);
     }
   }
@@ -179,7 +180,7 @@ function buildOptionsSummary(item: MenuItem, selected: Record<string, string[]>)
       const label = picked
         .map((cid) => {
           const ch = choiceById(proteinAdd, cid);
-          return ch ? `${ch.name} (+$${money((ch.priceDelta ?? 0) / 100)})` : null;
+          return ch ? `${ch.name} (+$${money(Number(ch.priceDelta ?? 0))})` : null;
         })
         .filter(Boolean)
         .join(", ");
@@ -194,7 +195,7 @@ function buildOptionsSummary(item: MenuItem, selected: Record<string, string[]>)
       const label = picked
         .map((cid) => {
           const ch = choiceById(vegAdd, cid);
-          return ch ? `${ch.name} (+$${money((ch.priceDelta ?? 0) / 100)})` : null;
+          return ch ? `${ch.name} (+$${money(Number(ch.priceDelta ?? 0))})` : null;
         })
         .filter(Boolean)
         .join(", ");
@@ -607,18 +608,30 @@ export default function MenuPage() {
     });
   }
 
-  const subtotalCents = useMemo(() => cart.reduce((sum, l) => sum + toCents(l.unitPrice) * l.qty, 0), [cart]);
+  const subtotalCents = useMemo(
+    () => cart.reduce((sum, l) => sum + toCents(l.unitPrice) * l.qty, 0),
+    [cart]
+  );
+
   const taxCents = useMemo(() => calcTaxCents(subtotalCents), [subtotalCents]);
-  const totalCents = subtotalCents + taxCents;
+
+  const serviceFeeCents = useMemo(
+    () => Math.round(subtotalCents * SERVICE_FEE_RATE),
+    [subtotalCents]
+  );
+
+  // ✅ total BEFORE tip = subtotal + tax + service fee
+  const totalCents = subtotalCents + taxCents + serviceFeeCents;
 
   const subtotal = subtotalCents / 100;
   const tax = taxCents / 100;
+  const serviceFee = serviceFeeCents / 100;
   const total = totalCents / 100;
 
   const modalUnitPrice = useMemo(() => {
     if (!activeItem) return 0;
-    const deltaCents = sumSelectedDeltaCents(activeItem, selected);
-    return activeItem.price + deltaCents / 100;
+    const delta = sumSelectedDeltaDollars(activeItem, selected);
+    return activeItem.price + delta;
   }, [activeItem, selected]);
 
   function canGoNext() {
@@ -670,8 +683,8 @@ export default function MenuPage() {
       }
     }
 
-    const deltaCents = sumSelectedDeltaCents(activeItem, selected);
-    const unitPrice = activeItem.price + deltaCents / 100;
+    const delta = sumSelectedDeltaDollars(activeItem, selected);
+    const unitPrice = activeItem.price + delta;
     const optionsSummary = buildOptionsSummary(activeItem, selected);
 
     const optKey = (activeItem.options ?? [])
@@ -723,6 +736,7 @@ export default function MenuPage() {
       // totals
       subtotal,
       tax,
+      serviceFee,
       total,
 
       // pickup details
@@ -1077,6 +1091,10 @@ export default function MenuPage() {
                       <div style={{ opacity: 0.75 }}>Tax</div>
                       <div style={{ fontWeight: 900 }}>${money(tax)}</div>
                     </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                      <div style={{ opacity: 0.75 }}>Online Service Fee</div>
+                      <div style={{ fontWeight: 900 }}>${money(serviceFee)}</div>
+                    </div>
                     <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10 }}>
                       <div style={{ fontWeight: 900 }}>Total</div>
                       <div style={{ fontWeight: 900 }}>${money(total)}</div>
@@ -1387,7 +1405,7 @@ export default function MenuPage() {
                                   <div style={{ fontWeight: 800 }}>{c.name}</div>
                                 </div>
                                 <div style={{ fontWeight: 900, opacity: 0.8 }}>
-                                  {c.priceDelta ? `+$${money(c.priceDelta / 100)}` : ""}
+                                  {c.priceDelta ? `+$${money(c.priceDelta)}` : ""}
                                 </div>
                               </label>
                             ))}
@@ -1424,7 +1442,7 @@ export default function MenuPage() {
                                     <div style={{ fontWeight: 800 }}>{c.name}</div>
                                   </div>
                                   <div style={{ fontWeight: 900, opacity: 0.8 }}>
-                                    {c.priceDelta ? `+$${money(c.priceDelta / 100)}` : ""}
+                                    {c.priceDelta ? `+$${money(c.priceDelta)}` : ""}
                                   </div>
                                 </label>
                               );

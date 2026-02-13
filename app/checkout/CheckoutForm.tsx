@@ -193,20 +193,39 @@ export default function CheckoutForm() {
           setMessage(submitError.message ?? "Please check your payment details.");
           return;
         }
+        
+        const origin = window.location.origin;
 
-        const { error } = await stripe.confirmPayment({
+        // ✅ IMPORTANT: match your real route
+        // If your file is app/checkout/success/page.tsx use "/checkout/success"
+        // If your file is app/success/page.tsx use "/success"
+        const successPath = "/checkout/success"; // <-- CHANGE if needed
+        const returnUrl = `${origin}${successPath}?orderId=${encodeURIComponent(orderId)}`;
+
+        const result = await stripe.confirmPayment({
           elements,
           confirmParams: {
             payment_method_data: { billing_details: { name } },
-            return_url: `${window.location.origin}/checkout/success?orderId=${encodeURIComponent(orderId)}`,
+            return_url: returnUrl,
           },
-          redirect: "always",
+          redirect: "if_required",
         });
 
-        if (error) {
-          setMessage(error.message ?? "Payment failed");
+        if (result.error) {
+          setMessage(result.error.message ?? "Payment failed");
           return;
         }
+
+        // ✅ If Stripe didn't redirect automatically, we MUST do it
+        // Sometimes result.paymentIntent is undefined even when it worked.
+        const status = result.paymentIntent?.status;
+
+        if (status === "succeeded" || status === "processing" || !status) {
+          window.location.assign(returnUrl);
+          return;
+        }
+
+        setMessage(`Payment status: ${status}`);
       } finally {
         setIsPaying(false);
       }

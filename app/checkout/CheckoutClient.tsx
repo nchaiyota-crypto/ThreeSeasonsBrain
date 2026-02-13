@@ -6,6 +6,9 @@ import { Elements } from "@stripe/react-stripe-js";
 import CheckoutForm from "./CheckoutForm";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+function money(n: number) {
+  return `$${Number(n || 0).toFixed(2)}`;
+}
 
 type LastOrder = {
   orderId?: string;
@@ -56,6 +59,33 @@ async function getClientSecret(lastOrder: LastOrder) {
   if (!j?.clientSecret) throw new Error("Missing clientSecret");
 
   return j.clientSecret as string;
+}
+
+function getServiceFee(o: any) {
+  if (!o) return 0;
+
+  // ✅ preferred: matches Supabase column
+  if (typeof o.service_fee_cents === "number") return o.service_fee_cents / 100;
+
+  // ✅ optional fallbacks (if you stored fee in localStorage under these)
+  const fromKeys = Number(
+    o?.serviceFee ??
+      o?.serviceFeeDollars ??
+      o?.onlineServiceFee ??
+      o?.service_fee ??
+      o?.online_service_fee ??
+      0
+  );
+
+  if (fromKeys > 0) return fromKeys;
+
+  // ✅ last fallback: infer from totals (only works if total includes fee)
+  const sub = Number(o?.subtotal ?? 0);
+  const tx = Number(o?.tax ?? 0);
+  const tot = Number(o?.total ?? 0);
+  const inferred = tot > 0 ? Math.max(0, +(tot - sub - tx).toFixed(2)) : 0;
+
+  return inferred;
 }
 
 export default function CheckoutClient() {
@@ -114,6 +144,45 @@ useEffect(() => {
 
   return (
     <>
+      {/* ✅ Breakdown (matches success style) */}
+      {order ? (
+        <div
+          style={{
+            marginBottom: 14,
+            padding: 14,
+            border: "1px solid #eee",
+            borderRadius: 14,
+            background: "#fafafa",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+            <div style={{ opacity: 0.75 }}>Subtotal</div>
+            <div style={{ fontWeight: 900 }}>${Number(order.subtotal ?? 0).toFixed(2)}</div>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+            <div style={{ opacity: 0.75 }}>Tax</div>
+            <div style={{ fontWeight: 900 }}>${Number(order.tax ?? 0).toFixed(2)}</div>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+            <div style={{ opacity: 0.75 }}>Online Service Fee</div>
+              <div style={{ fontWeight: 900 }}>
+                {money(getServiceFee(order))}
+              </div>
+          </div>
+
+          <div style={{ height: 1, background: "#e9e9e9", margin: "10px 0" }} />
+
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <div style={{ opacity: 0.75 }}>Total (before tip)</div>
+            <div style={{ fontWeight: 900 }}>
+              ${(Number(order.subtotal ?? 0) + Number(order.tax ?? 0) + getServiceFee(order)).toFixed(2)}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <Elements stripe={stripePromise} options={options}>
         <CheckoutForm />
       </Elements>
