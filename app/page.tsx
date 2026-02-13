@@ -253,9 +253,10 @@ export default function HomePage() {
             >
               <div style={{ fontWeight: 950, marginBottom: 10 }}>Hours</div>
               <div style={{ color: "#333", lineHeight: 1.7 }}>
-                <div>Mon–Thu: 11:00 AM – 9:00 PM</div>
-                <div>Fri–Sat: 11:00 AM – 10:00 PM</div>
-                <div>Sun: 12:00 PM – 9:00 PM</div>
+                <div>Mon: 4:00 PM – 9:00 PM</div>
+                <div>Tue: Close </div>
+                <div>Wed–Thu: 4:00 PM – 9:00 PM</div>
+                <div>Fri–Sun: 11:00 AM – 9:00 PM</div>
               </div>
 
               <div style={{ marginTop: 14, fontWeight: 950, marginBottom: 8 }}>Location</div>
