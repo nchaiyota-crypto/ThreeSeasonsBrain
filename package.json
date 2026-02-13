@@ -1,0 +1,28 @@
+{
+  "name": "three-seasons-online",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "stripe:listen": "stripe listen --forward-to http://localhost:3000/api/stripe/webhook",
+    "dev:all": "concurrently \"npm run dev\" \"npm run stripe:listen\""
+  },
+  "dependencies": {
+    "@stripe/react-stripe-js": "^2.9.0",
+    "@stripe/stripe-js": "^2.4.0",
+    "@supabase/supabase-js": "^2.39.3",
+    "next": "14.1.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "stripe": "^14.14.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "concurrently": "^8.2.2",
+    "typescript": "^5.3.3"
+  }
+}
