@@ -37,7 +37,7 @@ const BUSINESS_HOURS: Record<DayKey, Hours> = {
   2: { open: "16:00", close: "21:00" }, // Tue
   3: { open: "16:00", close: "21:00" }, // Wed
   4: { open: "16:00", close: "21:00" }, // Thu
-  5: { open: "11:00", close: "21:00" }, // Fri
+  5: { closed: true, open: "00:00", close: "00:00" }, // Fri
   6: { open: "11:00", close: "21:00" }, // Sat
 };
 
@@ -1189,7 +1189,7 @@ export default function MenuPage() {
                       "Online ordering is temporarily paused because of high volume. Please try again later."}
                   </div>
                 ) : pickupMode === "asap" ? (
-                  <div style={{ marginTop: 8, fontSize: 13, opacity: 0.8 }}>
+                  <div style={{ marginTop: 8, marginBottom: 14, fontSize: 13, opacity: 0.8 }}>
                     {ws?.status === "busy" || ws?.status === "very_busy"
                       ? `We are currently busier than usual. Your order will be ready in ~${estimateMin} minutes.`
                       : `Your order will be ready in ~${estimateMin} minutes.`}
@@ -1248,17 +1248,7 @@ export default function MenuPage() {
                     </div>
                   </div>
                 )}
-              </div>
             </div>
-
-            {/* Sticky footer */}
-            <div
-              style={{
-                padding: 14,
-                borderTop: "1px solid #eee",
-                background: "#fff",
-              }}
-            >
               <button
                 type="button"
                 disabled={!canCheckout}
@@ -1317,6 +1307,16 @@ export default function MenuPage() {
               >
                 Checkout • ${money(total)}
               </button>
+            </div>
+
+            {/* Sticky footer */}
+            <div
+              style={{
+                padding: 14,
+                borderTop: "1px solid #eee",
+                background: "#fff",
+              }}
+            >
 
               <div style={{ marginTop: 8, fontSize: 12, opacity: 0.65 }}>
                 {orderingPaused && "Online ordering is temporarily paused."}

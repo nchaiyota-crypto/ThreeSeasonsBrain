@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import SuccessClient from "./SuccessClient";
+import SuccessPickupClient from "./SuccessPickupClient";
 
 export const runtime = "nodejs";
 
@@ -52,6 +53,7 @@ export default async function SuccessPage({
       <SuccessClient />
 
       <h1>Payment received ✅</h1>
+      <SuccessPickupClient />
 
       {!orderId ? (
         <p style={{ color: "crimson" }}>Missing orderId in URL.</p>
