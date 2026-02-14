@@ -38,7 +38,7 @@ const BUSINESS_HOURS: Record<DayKey, Hours> = {
   3: { open: "16:00", close: "21:00" }, // Wed
   4: { open: "16:00", close: "21:00" }, // Thu
   5: { open: "11:00", close: "21:00" }, // Fri
-  6: { closed: true, open: "00:00", close: "00:00" }, // Sat
+  6: { open: "11:00", close: "21:00" }, // Sat
 };
 
 function parseHHMM(hhmm: string) {
