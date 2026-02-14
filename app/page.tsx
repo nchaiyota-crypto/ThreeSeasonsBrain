@@ -18,9 +18,12 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    (async () => {
+    let cancelled = false;
+
+    const load = async () => {
       try {
         const data = await fetchWaitStatus();
+        if (cancelled) return;
 
         setWs(data);
 
@@ -37,7 +40,16 @@ export default function HomePage() {
       } catch {
         // fail silent — never block homepage
       }
-    })();
+    };
+
+    load(); // run immediately once
+
+    const id = setInterval(load, 5000); // poll every 5s (change to 3000 if you want faster)
+
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
   }, []);
   return (
     <div style={{ minHeight: "100vh", background: "#fff" }}>
