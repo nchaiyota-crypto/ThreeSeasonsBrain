@@ -421,6 +421,13 @@ export default function MenuPage() {
     return () => mq.removeEventListener?.("change", apply);
   }, []);
 
+  // MOBILE: force ASAP so checkout works (until pickup UI is added to mobile sheet)
+  useEffect(() => {
+    if (!isMobile) return;
+    setPickupMode("asap");
+    setPickupTimeISO(""); // clear any stale schedule time
+  }, [isMobile]);
+
   // If user switches to desktop, close the bottom sheet
   useEffect(() => {
     if (!isMobile) setCartOpen(false);
@@ -779,125 +786,69 @@ export default function MenuPage() {
   const totalQtyInCart = useMemo(() => cart.reduce((sum, l) => sum + l.qty, 0), [cart]);
 
   return (
-  <div style={{ minHeight: "100dvh", background: "#f6f6f6" }}>
-    <div
-      style={{
-        maxWidth: 1200,
-        margin: "0 auto",
-        padding: 18,
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        minHeight: 0,
-      }}
-    >
-      {/* Header */}
+    <div style={{ minHeight: "100dvh", background: "#f6f6f6" }}>
       <div
         style={{
-          marginBottom: 14,
+          maxWidth: 1200,
+          margin: "0 auto",
+          padding: 18,
+          height: "100%",
           display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
-        }}
-      >
-        <div>
-          <div style={{ fontSize: isMobile ? 22 : 28, fontWeight: 900 }}>3 Seasons Thai Bistro</div>
-          <div style={{ opacity: 0.7, marginTop: 4 }}>Menu (MVP) — step-by-step options wizard</div>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            if (cart.length > 0) {
-              const ok = confirm("Go back to Home? Your cart will stay saved.");
-              if (!ok) return;
-            }
-            router.push("/");
-          }}
-          style={{
-            height: 40,
-            padding: "0 14px",
-            borderRadius: 12,
-            border: "1px solid #e1e1e1",
-            background: "#fff",
-            fontWeight: 900,
-            cursor: "pointer",
-          }}
-        >
-          ← Home
-        </button>
-      </div>
-
-      {/* 3-column layout */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: isMobile ? "1fr" : "260px 1fr 280px",
-          gap: 14,
-          alignItems: "start",
-          flex: 1,
+          flexDirection: "column",
           minHeight: 0,
         }}
       >
-        {/* LEFT (desktop only) */}
-        {!isMobile && (
-          <div
+        {/* Header */}
+        <div
+          style={{
+            marginBottom: 14,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+          }}
+        >
+          <div>
+            <div style={{ fontSize: isMobile ? 22 : 28, fontWeight: 900 }}>3 Seasons Thai Bistro</div>
+            <div style={{ opacity: 0.7, marginTop: 4 }}>Menu (MVP) — step-by-step options wizard</div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (cart.length > 0) {
+                const ok = confirm("Go back to Home? Your cart will stay saved.");
+                if (!ok) return;
+              }
+              router.push("/");
+            }}
             style={{
+              height: 40,
+              padding: "0 14px",
+              borderRadius: 12,
+              border: "1px solid #e1e1e1",
               background: "#fff",
-              borderRadius: 16,
-              border: "1px solid #e8e8e8",
-              padding: 14,
-              paddingBottom: 90,
-              height: "100%",
-              overflowY: "auto",
+              fontWeight: 900,
+              cursor: "pointer",
             }}
           >
-            <div style={{ fontWeight: 900, marginBottom: 8 }}>Search</div>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search menu"
-              style={{
-                width: "100%",
-                height: 40,
-                borderRadius: 12,
-                border: "1px solid #e1e1e1",
-                padding: "0 12px",
-                outline: "none",
-              }}
-            />
+            ← Home
+          </button>
+        </div>
 
-            <div style={{ fontWeight: 900, marginTop: 14, marginBottom: 8 }}>Categories</div>
-            <div style={{ display: "grid", gap: 8 }}>
-              {allCategories.map((cat) => {
-                const isActive = cat === activeCategory;
-                return (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => setActiveCategory(cat)}
-                    style={{
-                      textAlign: "left",
-                      width: "100%",
-                      padding: "10px 12px",
-                      borderRadius: 12,
-                      border: "1px solid #e1e1e1",
-                      background: isActive ? "#000" : "#f7f7f7",
-                      color: isActive ? "#fff" : "#111",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                    }}
-                  >
-                    {cat}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* CENTER */}
+        {/* 3-column layout */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr" : "260px 1fr 280px",
+            gap: 14,
+            alignItems: "start",
+            flex: 1,
+            minHeight: 0,
+          }}
+        >
+        {/* LEFT */}
+      {!isMobile && (
         <div
           style={{
             background: "#fff",
@@ -909,124 +860,119 @@ export default function MenuPage() {
             overflowY: "auto",
           }}
         >
-          {isMobile ? (
-            <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search menu"
-                style={{
-                  width: "100%",
-                  height: 42,
-                  borderRadius: 12,
-                  border: "1px solid #e1e1e1",
-                  padding: "0 12px",
-                  outline: "none",
-                }}
-              />
+          <div style={{ fontWeight: 900, marginBottom: 8 }}>Search</div>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search menu"
+            style={{
+              width: "100%",
+              height: 40,
+              borderRadius: 12,
+              border: "1px solid #e1e1e1",
+              padding: "0 12px",
+              outline: "none",
+            }}
+          />
 
-              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <div style={{ fontWeight: 900, marginTop: 14, marginBottom: 8 }}>Categories</div>
+          <div style={{ display: "grid", gap: 8 }}>
+            {allCategories.map((cat) => {
+              const isActive = cat === activeCategory;
+              return (
                 <button
+                  key={cat}
                   type="button"
-                  onClick={() => setCatOpen(true)}
+                  onClick={() => setActiveCategory(cat)}
                   style={{
-                    height: 40,
-                    padding: "0 14px",
+                    textAlign: "left",
+                    width: "100%",
+                    padding: "10px 12px",
                     borderRadius: 12,
                     border: "1px solid #e1e1e1",
-                    background: "#fff",
-                    fontWeight: 900,
+                    background: isActive ? "#000" : "#f7f7f7",
+                    color: isActive ? "#fff" : "#111",
+                    fontWeight: 700,
                     cursor: "pointer",
-                    whiteSpace: "nowrap",
                   }}
                 >
-                  Categories
+                  {cat}
                 </button>
-
-                <div
-                  style={{
-                    fontWeight: 900,
-                    fontSize: 18,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {activeCategory}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div style={{ fontWeight: 900, fontSize: 18, marginBottom: 10 }}>{activeCategory}</div>
-          )}
-
-          {/* ✅ PUT YOUR MENU LIST HERE */}
-          <div style={{ display: "grid", gap: 12 }}>
-            {filteredItems.map((item) => (
-              <div
-                key={item.id}
-                style={{
-                  border: "1px solid #eee",
-                  borderRadius: 16,
-                  padding: 12,
-                  display: "flex",
-                  gap: 12,
-                  alignItems: "center",
-                }}
-              >
-                {item.imageUrl ? (
-                  <img
-                    src={item.imageUrl}
-                    alt={item.name}
-                    style={{ width: 72, height: 72, borderRadius: 14, objectFit: "cover", background: "#f2f2f2" }}
-                  />
-                ) : (
-                  <div style={{ width: 72, height: 72, borderRadius: 14, background: "#f2f2f2" }} />
-                )}
-
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 900 }}>{item.name}</div>
-                  {item.description ? (
-                    <div style={{ marginTop: 4, fontSize: 13, opacity: 0.75 }}>{item.description}</div>
-                  ) : null}
-                  <div style={{ marginTop: 6, fontWeight: 900 }}>${money(item.price)}</div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => openWizard(item)}
-                  style={{
-                    height: 42,
-                    padding: "0 14px",
-                    borderRadius: 12,
-                    border: "none",
-                    background: "#000",
-                    color: "#fff",
-                    fontWeight: 900,
-                    cursor: "pointer",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Add
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
+      )}
 
-        {/* RIGHT (desktop only) */}
-        {!isMobile && (
+          {/* CENTER */}
           <div
             style={{
               background: "#fff",
               borderRadius: 16,
               border: "1px solid #e8e8e8",
+              padding: 14,
+              paddingBottom: 90,
               height: "100%",
-              display: "flex",
-              flexDirection: "column",
-              minHeight: 0,
+              overflowY: "auto",
             }}
           >
+            {isMobile ? (
+              <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search menu"
+                  style={{
+                    width: "100%",
+                    height: 42,
+                    borderRadius: 12,
+                    border: "1px solid #e1e1e1",
+                    padding: "0 12px",
+                    outline: "none",
+                  }}
+                />
+
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <button
+                    type="button"
+                    onClick={() => setCatOpen(true)}
+                    style={{
+                      height: 40,
+                      padding: "0 14px",
+                      borderRadius: 12,
+                      border: "1px solid #e1e1e1",
+                      background: "#fff",
+                      fontWeight: 900,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    Categories
+                  </button>
+
+                  <div style={{ fontWeight: 900, fontSize: 18, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {activeCategory}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ fontWeight: 900, fontSize: 18, marginBottom: 10 }}>{activeCategory}</div>
+            )}
+          </div>
+
+          {/* RIGHT */}
+          {!isMobile && (
+            <div
+              style={{
+                background: "#fff",
+                borderRadius: 16,
+                border: "1px solid #e8e8e8",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                minHeight: 0,
+              }}
+              >
             {/* Scrollable body */}
             <div
               style={{
@@ -1099,7 +1045,8 @@ export default function MenuPage() {
                         style={{
                           marginTop: 10,
                           display: "flex",
-                          alignItems: "center",
+                          flexDirection: isMobile ? "column" : "row",
+                          alignItems: isMobile ? "flex-start" : "center",
                           justifyContent: "space-between",
                           gap: 12,
                         }}
@@ -1117,6 +1064,7 @@ export default function MenuPage() {
                               cursor: "pointer",
                               fontWeight: 900,
                             }}
+                            aria-label="Decrease quantity"
                           >
                             –
                           </button>
@@ -1135,6 +1083,7 @@ export default function MenuPage() {
                               cursor: "pointer",
                               fontWeight: 900,
                             }}
+                            aria-label="Increase quantity"
                           >
                             +
                           </button>
@@ -1279,14 +1228,15 @@ export default function MenuPage() {
                     </div>
                   </div>
                 )}
-              </div>
-
+            </div>
               <button
                 type="button"
                 disabled={!canCheckout}
                 onClick={async () => {
+                  // 1) Save last_order to localStorage (you already have this)
                   saveLastOrder();
 
+                  // 2) Read it back
                   const raw = localStorage.getItem("last_order");
                   if (!raw) {
                     alert("Missing last_order");
@@ -1294,6 +1244,7 @@ export default function MenuPage() {
                   }
                   const payload = JSON.parse(raw);
 
+                  // 3) Create the order in Supabase (server route)
                   const res = await fetch("/api/create-order", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -1315,9 +1266,11 @@ export default function MenuPage() {
                     return;
                   }
 
+                  // 4) Save orderId into last_order so checkout can use it
                   payload.orderId = data.orderId;
                   localStorage.setItem("last_order", JSON.stringify(payload));
 
+                  // 5) Go to checkout
                   router.push("/checkout");
                 }}
                 style={{
@@ -1330,7 +1283,6 @@ export default function MenuPage() {
                   fontWeight: 900,
                   cursor: canCheckout ? "pointer" : "not-allowed",
                   opacity: canCheckout ? 1 : 0.5,
-                  marginTop: 12,
                 }}
               >
                 Checkout • ${money(total)}
@@ -1338,461 +1290,354 @@ export default function MenuPage() {
             </div>
 
             {/* Sticky footer */}
-            <div style={{ padding: 14, borderTop: "1px solid #eee", background: "#fff" }}>
+            <div
+              style={{
+                padding: 14,
+                borderTop: "1px solid #eee",
+                background: "#fff",
+              }}
+            >
+
               <div style={{ marginTop: 8, fontSize: 12, opacity: 0.65 }}>
                 {orderingPaused && "Online ordering is temporarily paused."}
+
                 {pickupMode === "asap" && isStoreClosedNow && "Store is closed right now."}
+
                 {pickupMode === "schedule" && !pickupTimeISO && "Please select a pickup time."}
+
                 {pickupMode === "schedule" && pickupTimeISO && "Scheduled pickup ready."}
               </div>
             </div>
           </div>
-        )}
-      </div>
-
-      {/* ✅ MOBILE CATEGORIES SHEET (OUTSIDE cartOpen) */}
-      {isMobile && catOpen && (
-        <div
-          onClick={() => setCatOpen(false)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.35)",
-            zIndex: 9500,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "flex-end",
-          }}
-        >
+          )}
+        </div>
+        {/* MOBILE CART BAR (sticky) */}
+        {isMobile && (
           <div
-            onClick={(e) => e.stopPropagation()}
             style={{
-              width: "100%",
-              maxWidth: 520,
-              background: "#fff",
-              borderTopLeftRadius: 18,
-              borderTopRightRadius: 18,
-              border: "1px solid rgba(0,0,0,0.08)",
-              maxHeight: "70dvh",
-              display: "flex",
-              flexDirection: "column",
-              overflow: "hidden",
+              position: "fixed",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              padding: 12,
+              background: "rgba(246,246,246,0.92)",
+              backdropFilter: "blur(8px)",
+              borderTop: "1px solid #e8e8e8",
+              zIndex: 8000,
+              pointerEvents: "auto",
             }}
           >
-            <div style={{ padding: 12, borderBottom: "1px solid #eee" }}>
-              <div style={{ width: 44, height: 5, borderRadius: 999, background: "#ddd", margin: "0 auto 10px" }} />
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ fontWeight: 900, fontSize: 18 }}>Categories</div>
-                <button
-                  type="button"
-                  onClick={() => setCatOpen(false)}
-                  style={{ border: "none", background: "transparent", fontWeight: 900, cursor: "pointer", opacity: 0.7 }}
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-
-            <div style={{ padding: 12, overflowY: "auto" }}>
-              <div style={{ display: "grid", gap: 8 }}>
-                {allCategories.map((cat) => {
-                  const isActive = cat === activeCategory;
-                  return (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => {
-                        setActiveCategory(cat);
-                        setCatOpen(false);
-                      }}
-                      style={{
-                        textAlign: "left",
-                        width: "100%",
-                        padding: "12px 12px",
-                        borderRadius: 12,
-                        border: "1px solid #e1e1e1",
-                        background: isActive ? "#000" : "#f7f7f7",
-                        color: isActive ? "#fff" : "#111",
-                        fontWeight: 800,
-                        cursor: "pointer",
-                      }}
-                    >
-                      {cat}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <button
+              type="button"
+              onClick={() => setCartOpen(true)}
+              style={{
+                width: "100%",
+                height: 52,
+                borderRadius: 16,
+                border: "none",
+                background: "#000",
+                color: "#fff",
+                fontWeight: 900,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "0 14px",
+                cursor: "pointer",
+              }}
+            >
+              <span>Cart ({totalQtyInCart})</span>
+              <span>${money(total)}</span>
+            </button>
           </div>
-        </div>
-      )}
+        )}  
 
-      {/* MOBILE CART BAR (sticky) */}
-      {isMobile && (
-        <div
-          style={{
-            position: "fixed",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            padding: 12,
-            background: "rgba(246,246,246,0.92)",
-            backdropFilter: "blur(8px)",
-            borderTop: "1px solid #e8e8e8",
-            zIndex: 8000,
-            pointerEvents: "auto",
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => setCartOpen(true)}
-            style={{
-              width: "100%",
-              height: 52,
-              borderRadius: 16,
-              border: "none",
-              background: "#000",
-              color: "#fff",
-              fontWeight: 900,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "0 14px",
-              cursor: "pointer",
-            }}
-          >
-            <span>Cart ({totalQtyInCart})</span>
-            <span>${money(total)}</span>
-          </button>
-        </div>
-      )}
-
-      {/* MOBILE CART SHEET */}
-      {isMobile && cartOpen && (
-        <div
-          onClick={() => setCartOpen(false)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.35)",
-            zIndex: 9000,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "flex-end",
-          }}
-        >
+        {/* MOBILE CART SHEET (Owner-style) */}
+        {isMobile && cartOpen && (
           <div
-            onClick={(e) => e.stopPropagation()}
+            onClick={() => setCartOpen(false)}
             style={{
-              width: "100%",
-              maxWidth: 520,
-              background: "#fff",
-              borderTopLeftRadius: 18,
-              borderTopRightRadius: 18,
-              border: "1px solid rgba(0,0,0,0.08)",
-              maxHeight: "85dvh",
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.35)",
+              zIndex: 9000,
               display: "flex",
-              flexDirection: "column",
-              overflow: "hidden",
+              justifyContent: "center",
+              alignItems: "flex-end",
             }}
           >
-            {/* Grab handle + header */}
-            <div style={{ padding: 12, borderBottom: "1px solid #eee" }}>
-              <div style={{ width: 44, height: 5, borderRadius: 999, background: "#ddd", margin: "0 auto 10px" }} />
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ fontWeight: 900, fontSize: 18 }}>Your Cart</div>
-                <button
-                  type="button"
-                  onClick={() => setCartOpen(false)}
-                  style={{ border: "none", background: "transparent", fontWeight: 900, cursor: "pointer", opacity: 0.7 }}
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: "100%",
+                maxWidth: 520,
+                background: "#fff",
+                borderTopLeftRadius: 18,
+                borderTopRightRadius: 18,
+                border: "1px solid rgba(0,0,0,0.08)",
+                maxHeight: "85dvh",
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+              }}
+            >
+              {/* MOBILE CATEGORIES SHEET */}
+              {isMobile && catOpen && (
+                <div
+                  onClick={() => setCatOpen(false)}
+                  style={{
+                    position: "fixed",
+                    inset: 0,
+                    background: "rgba(0,0,0,0.35)",
+                    zIndex: 9000,
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "flex-end",
+                  }}
                 >
-                  ✕
-                </button>
-              </div>
-            </div>
-
-            {/* Scrollable cart body */}
-            <div style={{ padding: 12, overflowY: "auto", flex: 1 }}>
-              {cart.length === 0 ? (
-                <div style={{ opacity: 0.7 }}>Your cart is empty.</div>
-              ) : (
-                <div style={{ display: "grid", gap: 10 }}>
-                  {cart.map((line) => (
-                    <div key={line.key} style={{ border: "1px solid #eee", borderRadius: 14, padding: 10, background: "#fff" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-                        <div style={{ fontWeight: 900 }}>{line.name}</div>
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      width: "100%",
+                      maxWidth: 520,
+                      background: "#fff",
+                      borderTopLeftRadius: 18,
+                      borderTopRightRadius: 18,
+                      border: "1px solid rgba(0,0,0,0.08)",
+                      maxHeight: "70dvh",
+                      display: "flex",
+                      flexDirection: "column",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div style={{ padding: 12, borderBottom: "1px solid #eee" }}>
+                      <div style={{ width: 44, height: 5, borderRadius: 999, background: "#ddd", margin: "0 auto 10px" }} />
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div style={{ fontWeight: 900, fontSize: 18 }}>Categories</div>
                         <button
                           type="button"
-                          onClick={() => removeLine(line.key)}
-                          style={{ border: "none", background: "transparent", cursor: "pointer", fontWeight: 900, opacity: 0.6 }}
+                          onClick={() => setCatOpen(false)}
+                          style={{ border: "none", background: "transparent", fontWeight: 900, cursor: "pointer", opacity: 0.7 }}
                         >
                           ✕
                         </button>
                       </div>
+                    </div>
 
-                      {line.optionsSummary ? (
-                        <div style={{ marginTop: 6, fontSize: 12, opacity: 0.75 }}>{line.optionsSummary}</div>
-                      ) : null}
-
-                      <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <button
-                            type="button"
-                            onClick={() => changeLineQty(line.key, -1)}
-                            style={{
-                              width: 34,
-                              height: 34,
-                              borderRadius: 10,
-                              border: "1px solid #ddd",
-                              background: "#fff",
-                              cursor: "pointer",
-                              fontWeight: 900,
-                            }}
-                          >
-                            –
-                          </button>
-
-                          <div style={{ minWidth: 18, textAlign: "center", fontWeight: 900 }}>{line.qty}</div>
-
-                          <button
-                            type="button"
-                            onClick={() => changeLineQty(line.key, +1)}
-                            style={{
-                              width: 34,
-                              height: 34,
-                              borderRadius: 10,
-                              border: "1px solid #ddd",
-                              background: "#fff",
-                              cursor: "pointer",
-                              fontWeight: 900,
-                            }}
-                          >
-                            +
-                          </button>
-                        </div>
-
-                        <div style={{ fontWeight: 900 }}>${money(line.unitPrice * line.qty)}</div>
+                    <div style={{ padding: 12, overflowY: "auto" }}>
+                      <div style={{ display: "grid", gap: 8 }}>
+                        {allCategories.map((cat) => {
+                          const isActive = cat === activeCategory;
+                          return (
+                            <button
+                              key={cat}
+                              type="button"
+                              onClick={() => {
+                                setActiveCategory(cat);
+                                setCatOpen(false);
+                              }}
+                              style={{
+                                textAlign: "left",
+                                width: "100%",
+                                padding: "12px 12px",
+                                borderRadius: 12,
+                                border: "1px solid #e1e1e1",
+                                background: isActive ? "#000" : "#f7f7f7",
+                                color: isActive ? "#fff" : "#111",
+                                fontWeight: 800,
+                                cursor: "pointer",
+                              }}
+                            >
+                              {cat}
+                            </button>
+                          );
+                        })}
                       </div>
-                    </div>
-                  ))}
-
-                  <div style={{ borderTop: "1px solid #eee", paddingTop: 10 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                      <div style={{ opacity: 0.75 }}>Subtotal</div>
-                      <div style={{ fontWeight: 900 }}>${money(subtotal)}</div>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                      <div style={{ opacity: 0.75 }}>Tax</div>
-                      <div style={{ fontWeight: 900 }}>${money(tax)}</div>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                      <div style={{ opacity: 0.75 }}>Online Service Fee</div>
-                      <div style={{ fontWeight: 900 }}>${money(serviceFee)}</div>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10 }}>
-                      <div style={{ fontWeight: 900 }}>Total</div>
-                      <div style={{ fontWeight: 900 }}>${money(total)}</div>
                     </div>
                   </div>
                 </div>
               )}
-            </div>
-
-              {/* Sticky sheet footer */}
-            <div style={{ padding: 12, borderTop: "1px solid #eee", background: "#fff" }}>
-              {/* PICKUP UI (MOBILE) */}
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ fontWeight: 900, marginBottom: 6 }}>Pickup</div>
-
-                <div style={{ display: "flex", gap: 8 }}>
+              {/* Grab handle + header */}
+              <div style={{ padding: 12, borderBottom: "1px solid #eee" }}>
+                <div style={{ width: 44, height: 5, borderRadius: 999, background: "#ddd", margin: "0 auto 10px" }} />
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ fontWeight: 900, fontSize: 18 }}>Your Cart</div>
                   <button
                     type="button"
-                    disabled={isStoreClosedNow || orderingPaused}
-                    onClick={() => setPickupMode("asap")}
-                    style={{
-                      flex: 1,
-                      height: 40,
-                      borderRadius: 12,
-                      border: "1px solid #e1e1e1",
-                      background: pickupMode === "asap" ? "#000" : "#fff",
-                      color: pickupMode === "asap" ? "#fff" : "#111",
-                      fontWeight: 900,
-                      cursor: "pointer",
-                      opacity: isStoreClosedNow || orderingPaused ? 0.5 : 1,
-                    }}
+                    onClick={() => setCartOpen(false)}
+                    style={{ border: "none", background: "transparent", fontWeight: 900, cursor: "pointer", opacity: 0.7 }}
                   >
-                    ASAP
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={orderingPaused}
-                    onClick={() => {
-                      setPickupMode("schedule");
-                      if (!pickupDate) {
-                        const dates = buildDateOptions();
-                        if (dates[0]) setPickupDate(dates[0]);
-                      }
-                      if (!pickupTimeISO && timeSlots.length) setPickupTimeISO(timeSlots[0]);
-                    }}
-                    style={{
-                      flex: 1,
-                      height: 40,
-                      borderRadius: 12,
-                      border: "1px solid #e1e1e1",
-                      background: pickupMode === "schedule" ? "#000" : "#fff",
-                      color: pickupMode === "schedule" ? "#fff" : "#111",
-                      fontWeight: 900,
-                      cursor: "pointer",
-                      opacity: orderingPaused ? 0.5 : 1,
-                    }}
-                  >
-                    Schedule
+                    ✕
                   </button>
                 </div>
+              </div>
 
-                {orderingPaused ? (
-                  <div style={{ marginTop: 8, fontSize: 13, opacity: 0.8 }}>
-                    {ws?.pause_message || "Online ordering is temporarily paused. Please try again later."}
-                  </div>
-                ) : pickupMode === "asap" ? (
-                  <div style={{ marginTop: 8, fontSize: 13, opacity: 0.8 }}>
-                    {isStoreClosedNow
-                      ? "Store is closed right now. Please choose Schedule."
-                      : `Your order will be ready in ~${estimateMin} minutes.`}
-                  </div>
+              {/* Scrollable cart body */}
+              <div style={{ padding: 12, overflowY: "auto", flex: 1 }}>
+                {cart.length === 0 ? (
+                  <div style={{ opacity: 0.7 }}>Your cart is empty.</div>
                 ) : (
-                  <div style={{ marginTop: 10 }}>
-                    <div style={{ fontWeight: 900, marginBottom: 6 }}>Select pickup day</div>
+                  <div style={{ display: "grid", gap: 10 }}>
+                    {cart.map((line) => (
+                      <div
+                        key={line.key}
+                        style={{ border: "1px solid #eee", borderRadius: 14, padding: 10, background: "#fff" }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                          <div style={{ fontWeight: 900 }}>{line.name}</div>
+                          <button
+                            type="button"
+                            onClick={() => removeLine(line.key)}
+                            style={{ border: "none", background: "transparent", cursor: "pointer", fontWeight: 900, opacity: 0.6 }}
+                          >
+                            ✕
+                          </button>
+                        </div>
 
-                    <input
-                      type="date"
-                      value={pickupDate}
-                      min={buildDateOptions()[0] ?? undefined}
-                      max={buildDateOptions()[buildDateOptions().length - 1] ?? undefined}
-                      onChange={(e) => setPickupDate(e.target.value)}
-                      style={{
-                        width: "100%",
-                        height: 42,
-                        borderRadius: 12,
-                        border: "1px solid #e1e1e1",
-                        padding: "0 10px",
-                        outline: "none",
-                        fontWeight: 700,
-                        background: "#fff",
-                      }}
-                    />
+                        {line.optionsSummary ? (
+                          <div style={{ marginTop: 6, fontSize: 12, opacity: 0.75 }}>{line.optionsSummary}</div>
+                        ) : null}
 
-                    <div style={{ marginTop: 10, fontWeight: 900, marginBottom: 6 }}>Select pickup time</div>
+                        <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <button
+                              type="button"
+                              onClick={() => changeLineQty(line.key, -1)}
+                              style={{
+                                width: 34,
+                                height: 34,
+                                borderRadius: 10,
+                                border: "1px solid #ddd",
+                                background: "#fff",
+                                cursor: "pointer",
+                                fontWeight: 900,
+                              }}
+                            >
+                              –
+                            </button>
 
-                    <select
-                      value={pickupTimeISO}
-                      onChange={(e) => setPickupTimeISO(e.target.value)}
-                      style={{
-                        width: "100%",
-                        height: 42,
-                        borderRadius: 12,
-                        border: "1px solid #e1e1e1",
-                        padding: "0 10px",
-                        outline: "none",
-                        fontWeight: 700,
-                        background: "#fff",
-                      }}
-                    >
-                      {timeSlots.length === 0 ? (
-                        <option value="">No times available</option>
-                      ) : (
-                        timeSlots.map((iso) => (
-                          <option key={iso} value={iso}>
-                            {formatSlot(iso)}
-                          </option>
-                        ))
-                      )}
-                    </select>
+                            <div style={{ minWidth: 18, textAlign: "center", fontWeight: 900 }}>{line.qty}</div>
 
-                    <div style={{ marginTop: 6, fontSize: 12, opacity: 0.65 }}>
-                      Must be at least 1 hour ahead • Up to 3 days • Only business hours
+                            <button
+                              type="button"
+                              onClick={() => changeLineQty(line.key, +1)}
+                              style={{
+                                width: 34,
+                                height: 34,
+                                borderRadius: 10,
+                                border: "1px solid #ddd",
+                                background: "#fff",
+                                cursor: "pointer",
+                                fontWeight: 900,
+                              }}
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          <div style={{ fontWeight: 900 }}>${money(line.unitPrice * line.qty)}</div>
+                        </div>
+                      </div>
+                    ))}
+
+                    <div style={{ borderTop: "1px solid #eee", paddingTop: 10 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                        <div style={{ opacity: 0.75 }}>Subtotal</div>
+                        <div style={{ fontWeight: 900 }}>${money(subtotal)}</div>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                        <div style={{ opacity: 0.75 }}>Tax</div>
+                        <div style={{ fontWeight: 900 }}>${money(tax)}</div>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                        <div style={{ opacity: 0.75 }}>Online Service Fee</div>
+                        <div style={{ fontWeight: 900 }}>${money(serviceFee)}</div>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10 }}>
+                        <div style={{ fontWeight: 900 }}>Total</div>
+                        <div style={{ fontWeight: 900 }}>${money(total)}</div>
+                      </div>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Checkout button */}
-              <button
-                type="button"
-                disabled={!canCheckout}
-                onClick={async () => {
-                  saveLastOrder();
+              {/* Sticky sheet footer */}
+              <div style={{ padding: 12, borderTop: "1px solid #eee", background: "#fff" }}>
+                <button
+                  type="button"
+                  disabled={!canCheckout}
+                  onClick={async () => {
+                    saveLastOrder();
 
-                  const raw = localStorage.getItem("last_order");
-                  if (!raw) {
-                    alert("Missing last_order");
-                    return;
-                  }
+                    const raw = localStorage.getItem("last_order");
+                    if (!raw) {
+                      alert("Missing last_order");
+                      return;
+                    }
 
-                  const payload = JSON.parse(raw);
+                    const payload = JSON.parse(raw);
 
-                  const res = await fetch("/api/create-order", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload),
-                  });
+                    const res = await fetch("/api/create-order", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(payload),
+                    });
 
-                  let data: any = null;
-                  let text = "";
-                  try {
-                    text = await res.text();
-                    data = text ? JSON.parse(text) : null;
-                  } catch {
-                    data = { raw: text };
-                  }
+                    let data: any = null;
+                    let text = "";
+                    try {
+                      text = await res.text();
+                      data = text ? JSON.parse(text) : null;
+                    } catch {
+                      data = { raw: text };
+                    }
 
-                  if (!res.ok) {
-                    console.error("create-order failed:", { status: res.status, data });
-                    alert(`Create order failed (${res.status}): ${data?.error ?? data?.raw ?? "Unknown"}`);
-                    return;
-                  }
+                    if (!res.ok) {
+                      console.error("create-order failed:", { status: res.status, data });
+                      alert(`Create order failed (${res.status}): ${data?.error ?? data?.raw ?? "Unknown"}`);
+                      return;
+                    }
 
-                  payload.orderId = data.orderId;
-                  localStorage.setItem("last_order", JSON.stringify(payload));
+                    payload.orderId = data.orderId;
+                    localStorage.setItem("last_order", JSON.stringify(payload));
 
-                  setCartOpen(false);
-                  router.push("/checkout");
-                }}
-                style={{
-                  width: "100%",
-                  height: 50,
-                  borderRadius: 14,
-                  border: "none",
-                  background: "#000",
-                  color: "#fff",
-                  fontWeight: 900,
-                  cursor: canCheckout ? "pointer" : "not-allowed",
-                  opacity: canCheckout ? 1 : 0.5,
-                }}
-              >
-                Ready to Checkout • ${money(total)}
-              </button>
+                    setCartOpen(false);
+                    router.push("/checkout");
+                  }}
+                  style={{
+                    width: "100%",
+                    height: 50,
+                    borderRadius: 14,
+                    border: "none",
+                    background: "#000",
+                    color: "#fff",
+                    fontWeight: 900,
+                    cursor: canCheckout ? "pointer" : "not-allowed",
+                    opacity: canCheckout ? 1 : 0.5,
+                  }}
+                >
+                  Ready to Checkout • ${money(total)}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* WIZARD MODAL (keep your existing modal here) */}
-      {isModalOpen && activeItem && steps.length > 0 && (
-        <div
-          onClick={closeWizard}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.35)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 16,
-            zIndex: 9999,
-          }}
-        >
+        {/* WIZARD MODAL */}
+        {isModalOpen && activeItem && steps.length > 0 && (
+          <div
+            onClick={closeWizard}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.35)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 16,
+              zIndex: 9999,
+            }}
+          >
             <div
               onClick={(e) => e.stopPropagation()}
               style={{
