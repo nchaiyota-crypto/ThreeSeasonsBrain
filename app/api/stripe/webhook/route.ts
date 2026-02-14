@@ -37,6 +37,13 @@ export async function POST(req: Request) {
     if (event.type === "payment_intent.succeeded") {
       const pi = event.data.object as Stripe.PaymentIntent;
 
+      const customerName =
+        String(
+          pi.metadata?.customerName ??
+          pi.metadata?.customer_name ??
+          pi.shipping?.name ??
+          ""
+        ).trim() || null;
       const orderId = String(pi.metadata?.orderId || "");
       if (!orderId) {
         // If you ever forget metadata, fallback could be: lookup by stripe_payment_intent_id
@@ -51,6 +58,7 @@ export async function POST(req: Request) {
       const { error: updErr } = await supabase
         .from("orders")
         .update({
+          customer_name: customerName,
           payment_status: "paid",
           status: "paid",                // ✅ allowed by constraint
           total_cents: baseAmount, // ✅ optional, see note below
@@ -107,7 +115,19 @@ export async function POST(req: Request) {
             order_item_id: it.id,                  // ✅ NOT NULL REQUIRED
             display_name: String(it.menu_item_name ?? "Item"),
             qty: Number(it.qty ?? 1),
-            modifiers_text: null,
+            modifiers_text: (() => {
+              const raw =
+                it.options_summary ??
+                it.optionsSummary ??
+                it.modifiers_text ??
+                it.modifiers ??
+                it.options ??
+                null;
+
+              if (!raw) return null;
+
+              return String(raw).replace(/\s*•\s*/g, "\n");
+            })(),
             instructions_text: it.special_instructions ? String(it.special_instructions) : null,
             status: "new",
           }));

@@ -105,6 +105,13 @@ export async function POST(req: Request) {
         typeof maybeId === "string" &&
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(maybeId);
 
+      const optionsSummary =
+        it?.optionsSummary ??
+        it?.options_summary ??
+        it?.modifiersSummary ??
+        it?.modifiers?.join?.(" • ")
+        null;
+
       return {
         order_id: orderId,
         menu_item_id: looksLikeUUID ? maybeId : null,
@@ -113,6 +120,7 @@ export async function POST(req: Request) {
         base_price_cents: basePriceCents,
         line_subtotal_cents: lineSubtotalCents,
         special_instructions: specialInstructions ? String(specialInstructions) : null,
+        options_summary: optionsSummary ? String(optionsSummary) : null, // ✅ ADD THIS
       };
     });
 
