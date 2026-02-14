@@ -13,7 +13,11 @@ export type GetWaitStatusResponse = {
 }
 
 export async function fetchWaitStatus(): Promise<GetWaitStatusResponse> {
-  const res = await fetch(`/api/wait-status?t=${Date.now()}`, { cache: "no-store" });
+  const res = await fetch("/api/wait-status?t=" + Date.now(), {
+    method: "GET",
+    cache: "no-store",
+    headers: { "Content-Type": "application/json" },
+  });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }

@@ -23,7 +23,7 @@ export default function HomePage() {
     const load = async () => {
       try {
         const data = await fetchWaitStatus();
-        if (cancelled) return; // ✅ keep this
+        if (cancelled) return;
 
         setWs(data);
 
@@ -44,10 +44,7 @@ export default function HomePage() {
 
     load(); // run immediately once
 
-    const id = setInterval(() => {
-      if (cancelled) return; // ✅ tiny add: don't fire new calls after unmount
-      load();
-    }, 5000);
+    const id = setInterval(load, 5000); // poll every 5s (change to 3000 if you want faster)
 
     return () => {
       cancelled = true;
