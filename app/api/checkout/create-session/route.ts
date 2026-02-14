@@ -80,6 +80,35 @@ export async function POST(req: Request) {
       );
     }
 
+    // ✅ Create order_items rows so webhook can map -> kds_ticket_items.order_item_id
+    const orderId = data.id;
+
+    const orderItemsRows = items.map((it: any) => {
+      const qty = Number(it?.qty ?? 1);
+
+      // These fields MUST match your order_items columns (your screenshot shows these exist)
+      return {
+        order_id: orderId,
+        menu_item_id: it?.menu_item_id ?? it?.itemId ?? it?.id ?? null,
+        menu_item_name: String(it?.menu_item_name ?? it?.name ?? "Item"),
+        qty,
+        base_price_cents: toInt(Math.round(Number(it?.unitPrice ?? it?.price ?? 0) * 100)) ?? 0,
+        line_subtotal_cents:
+          toInt(Math.round(Number(it?.lineSubtotal ?? (Number(it?.unitPrice ?? it?.price ?? 0) * qty)) * 100)) ?? 0,
+        special_instructions: it?.notes ?? it?.special_instructions ?? null,
+      };
+    });
+
+    const { error: oiErr } = await supabase.from("order_items").insert(orderItemsRows);
+
+    if (oiErr) {
+      console.error("❌ order_items insert failed:", oiErr.message);
+      return NextResponse.json(
+        { error: "order_items insert failed", details: oiErr.message },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       orderId: data.id,
       orderNumber: data.order_number ?? null,

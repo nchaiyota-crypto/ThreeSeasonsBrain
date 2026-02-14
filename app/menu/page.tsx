@@ -37,7 +37,7 @@ const BUSINESS_HOURS: Record<DayKey, Hours> = {
   2: { open: "16:00", close: "21:00" }, // Tue
   3: { open: "16:00", close: "21:00" }, // Wed
   4: { open: "16:00", close: "21:00" }, // Thu
-  5: { closed: true, open: "00:00", close: "00:00" }, // Fri
+  5: { open: "11:00", close: "21:00" }, // Fri
   6: { open: "11:00", close: "21:00" }, // Sat
 };
 
