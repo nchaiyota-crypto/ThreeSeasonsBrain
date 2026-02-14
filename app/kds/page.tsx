@@ -3,7 +3,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { createClient } from "@supabase/supabase-js";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 
 type TicketOrder = {
@@ -28,12 +27,8 @@ type TicketItemRow = {
   qty: number;
 };
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
 export default function KDSPage() {
+  const supabase = useMemo(() => supabaseBrowser(), []);
   const [doneFlash, setDoneFlash] = useState(false);
 
   const [loading, setLoading] = useState(true);
