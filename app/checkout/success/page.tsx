@@ -44,6 +44,24 @@ function safeParse<T>(raw: string | null): T | null {
   }
 }
 
+//add special request box
+function mergeItemsPreserveNotes(supaItems: any[] | null | undefined, lastItems: any[]) {
+  if (!Array.isArray(supaItems) || supaItems.length === 0) return lastItems;
+
+  const byKey = new Map(lastItems.map((x) => [x.key, x]));
+  return supaItems.map((it) => {
+    const local = byKey.get(it.key);
+    return {
+      ...it,
+      // keep local note fields if Supabase doesn't have them
+      specialInstructions: it.specialInstructions ?? local?.specialInstructions,
+      note: it.note ?? local?.note,
+      optionsSummary: it.optionsSummary ?? local?.optionsSummary,
+      imageUrl: it.imageUrl ?? local?.imageUrl,
+    };
+  });
+}
+
 function clearCartStorage() {
   // ✅ remove whatever your cart uses (safe even if key doesn't exist)
   const keys = [
@@ -189,9 +207,6 @@ export default function CheckoutSuccess() {
         const supa = await pullFromSupabase(targetOrderId);
 
         // ✅ helpers: don't let [] or 0 overwrite the real order from localStorage
-        const mergedItems =
-          Array.isArray(supa?.items) && supa.items.length > 0 ? supa.items : last.items;
-
         const mergedSubtotal =
           typeof supa?.subtotal === "number" && supa.subtotal > 0 ? supa.subtotal : last.subtotal;
 
@@ -221,6 +236,28 @@ export default function CheckoutSuccess() {
               ? (last as any).totalWithTip
               : (mergedTotal + mergedTipCents / 100);
 
+        // Protein/Add-on merged
+        const lastItems = Array.isArray(last.items) ? last.items : [];
+        const supaItems = Array.isArray(supa?.items) ? supa.items : [];
+
+        // Prefer Supabase for "note/specialInstructions", but keep local "optionsSummary"
+        const mergedItems =
+          supaItems.length > 0
+            ? supaItems.map((si: any) => {
+                const li =
+                  lastItems.find((x: any) => x.key && si.key && x.key === si.key) ||
+                  lastItems.find((x: any) => x.itemId && si.itemId && x.itemId === si.itemId) ||
+                  lastItems.find((x: any) => x.name && si.name && x.name === si.name);
+
+                return {
+                  ...li,               // brings optionsSummary, imageUrl, etc
+                  ...si,               // brings note/specialInstructions from DB
+                  optionsSummary: si.optionsSummary ?? li?.optionsSummary,
+                  note: si.note ?? li?.note,
+                  specialInstructions: si.specialInstructions ?? li?.specialInstructions,
+                };
+              })
+            : lastItems;
 
         // ✅ SERVICE FEE merge (prefer Supabase; fallback to local)
         const mergedServiceFeeCents =
@@ -323,9 +360,21 @@ export default function CheckoutSuccess() {
                 <div style={{ fontWeight: 800 }}>
                   {it.qty}× {it.name}
                 </div>
-                {it.optionsSummary ? <div style={{ fontSize: 12, opacity: 0.7 }}>{it.optionsSummary}</div> : null}
+
+                {it.optionsSummary ? (
+                  <div style={{ fontSize: 12, opacity: 0.7 }}>{it.optionsSummary}</div>
+                ) : null}
+
+                {(it.specialInstructions || it.note) ? (
+                  <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
+                    <b>Note:</b> {it.specialInstructions || it.note}
+                  </div>
+                ) : null}
               </div>
-              <div style={{ fontWeight: 800, whiteSpace: "nowrap" }}>${(it.unitPrice * it.qty).toFixed(2)}</div>
+
+              <div style={{ fontWeight: 800, whiteSpace: "nowrap" }}>
+                ${(it.unitPrice * it.qty).toFixed(2)}
+              </div>
             </div>
           ))}
         </div>

@@ -11,14 +11,24 @@ import {
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 type Order = {
-  // ✅ add orderId so we can fetch from Supabase
   orderId?: string;
 
   orderNumber: string;
   items: any[];
   subtotal: number;
   tax: number;
+
+  // total = subtotal + tax + service fee (server truth)
   total: number;
+
+  // ✅ add these
+  service_fee_cents?: number; // cents (from DB)
+  total_cents?: number;       // cents (from DB)
+
+  // ✅ Tip support
+  tipCents?: number;        // cents
+  totalWithTip?: number;    // dollars
+
   pickupMode: "asap" | "schedule";
   pickupDate?: string;
   pickupTimeISO?: string;
@@ -89,12 +99,14 @@ export default function CheckoutSuccess() {
         const redirectStatus = url.searchParams.get("redirect_status"); // succeeded
         const paymentIntentId = url.searchParams.get("payment_intent");
 
-        // 0) If we already have a locked paid order, show it immediately
+        // 0) Read orderId from URL (so we show the correct confirmation)
+        const orderIdFromUrl = url.searchParams.get("orderId") || undefined;
+
+        // 0b) If we already have a locked paid order, ONLY use it if it matches this orderId
         const existingPaid = safeParse<Order>(localStorage.getItem("last_paid_order"));
-        if (existingPaid && alive) {
+        if (existingPaid && orderIdFromUrl && existingPaid.orderId === orderIdFromUrl && alive) {
           setOrder(existingPaid);
           setStatus("paid");
-          // Clear cart/order leftovers just in case
           clearAllCheckoutStorage();
           return;
         }
@@ -142,33 +154,103 @@ export default function CheckoutSuccess() {
 
         // If we can’t verify, show warning UI but don’t clear anything
         if (!isPaid && !paymentIntentClientSecret) {
+          // ✅ verify by orderId via server (Stripe secret)
+          const targetOrderId = orderIdFromUrl || last.orderId;
+          if (!targetOrderId) {
+            setStatus("error");
+            setOrder(last);
+            setMsg("Missing orderId for verification.");
+            return;
+          }
+
+          const r = await fetch(`/api/orders/status?orderId=${encodeURIComponent(targetOrderId)}`);
+          const data = await r.json();
+
+        if (data?.paid) {
+          isPaid = true;
+          setMsg("");
+        } else {
           setStatus("not_paid");
           setOrder(last);
-          setMsg(
-            paymentIntentId
-              ? `Missing payment details for verification (PaymentIntent: ${paymentIntentId}).`
-              : "We couldn’t verify payment on this page. If you paid, please don’t pay again."
-          );
+          setMsg(`We couldn't verify payment yet. Server status: ${data?.piStatus || "unknown"}`);
           return;
+        }
         }
 
         // 3) PAID — pull official order from Supabase (orderNumber + items + totals)
-        const supa = await pullFromSupabase(last.orderId);
+        const targetOrderId = orderIdFromUrl || last.orderId;
+        if (!targetOrderId) {
+          setStatus("error");
+          setOrder(last);
+          setMsg("Missing orderId for confirmation.");
+          return;
+        }
+
+        const supa = await pullFromSupabase(targetOrderId);
+
+        // ✅ helpers: don't let [] or 0 overwrite the real order from localStorage
+        const mergedItems =
+          Array.isArray(supa?.items) && supa.items.length > 0 ? supa.items : last.items;
+
+        const mergedSubtotal =
+          typeof supa?.subtotal === "number" && supa.subtotal > 0 ? supa.subtotal : last.subtotal;
+
+        const mergedTax =
+          typeof supa?.tax === "number" && supa.tax > 0 ? supa.tax : last.tax;
+
+        const mergedTotal =
+          typeof supa?.total === "number" && supa.total > 0 ? supa.total : last.total;
+        
+        // ✅ TIP merge (prefer Supabase; fallback to localStorage last_order)
+        const mergedTipCents =
+          typeof supa?.tip_cents === "number"
+            ? supa.tip_cents
+            : typeof (last as any)?.tipCents === "number"
+              ? (last as any).tipCents
+              : typeof (last as any)?.tip_cents === "number"
+                ? (last as any).tip_cents
+                : 0;
+
+        const supaTotalWithTip =
+          typeof supa?.total_with_tip_cents === "number" ? supa.total_with_tip_cents / 100 : 0;
+
+        const mergedTotalWithTip =
+          supaTotalWithTip > 0
+            ? supaTotalWithTip
+            : (typeof (last as any)?.totalWithTip === "number" && (last as any).totalWithTip > 0)
+              ? (last as any).totalWithTip
+              : (mergedTotal + mergedTipCents / 100);
+
+
+        // ✅ SERVICE FEE merge (prefer Supabase; fallback to local)
+        const mergedServiceFeeCents =
+          typeof supa?.service_fee_cents === "number"
+            ? supa.service_fee_cents
+            : typeof (last as any)?.service_fee_cents === "number"
+              ? (last as any).service_fee_cents
+              : 0;
+
+        // ✅ total cents (for exact display math)
+        const mergedTotalCents =
+          typeof supa?.total_cents === "number"
+            ? supa.total_cents
+            : Math.round(mergedTotal * 100);      
 
         const finalOrder: Order = {
           ...last,
-          ...(supa
-            ? {
-                orderNumber: String(supa.orderNumber),
-                items: supa.items ?? last.items,
-                subtotal: supa.subtotal ?? last.subtotal,
-                tax: supa.tax ?? last.tax,
-                total: supa.total ?? last.total,
-                pickupMode: supa.pickupMode ?? last.pickupMode ?? "asap",
-                pickupTimeISO: supa.pickupTimeISO ?? last.pickupTimeISO,
-                estimateMin: supa.estimateMin ?? last.estimateMin,
-              }
-            : {}),
+          orderId: targetOrderId,
+          orderNumber: String(supa?.orderNumber ?? last.orderNumber),
+          items: mergedItems,
+          subtotal: mergedSubtotal,
+          tax: mergedTax,
+          total: mergedTotal,
+          service_fee_cents: mergedServiceFeeCents,
+          total_cents: mergedTotalCents,
+          tipCents: mergedTipCents,
+          totalWithTip: mergedTotalWithTip,
+          pickupMode: (supa?.pickupMode ?? last.pickupMode ?? "asap") as any,
+          pickupTimeISO: supa?.pickupTimeISO ?? last.pickupTimeISO,
+          estimateMin: supa?.estimateMin ?? last.estimateMin,
         };
 
         // 4) Lock paid order + clear cart/order keys
@@ -229,7 +311,9 @@ export default function CheckoutSuccess() {
             <div style={{ fontWeight: 900 }}>Order #{order.orderNumber}</div>
             <div style={{ fontSize: 13, opacity: 0.75, marginTop: 4 }}>Pickup: {pickupText}</div>
           </div>
-          <div style={{ fontWeight: 900, fontSize: 16 }}>${order.total.toFixed(2)}</div>
+          <div style={{ fontWeight: 900, fontSize: 16 }}>
+            ${(order.totalWithTip ?? (order.total + (order.tipCents ?? 0) / 100)).toFixed(2)}
+          </div>
         </div>
 
         <div style={{ marginTop: 12, borderTop: "1px solid #e9e9e9", paddingTop: 12 }}>
@@ -251,9 +335,29 @@ export default function CheckoutSuccess() {
             <div style={{ opacity: 0.75 }}>Subtotal</div>
             <div style={{ fontWeight: 900 }}>${order.subtotal.toFixed(2)}</div>
           </div>
+
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
             <div style={{ opacity: 0.75 }}>Tax</div>
             <div style={{ fontWeight: 900 }}>${order.tax.toFixed(2)}</div>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+            <div style={{ opacity: 0.75 }}>Tip</div>
+            <div style={{ fontWeight: 900 }}>${((order.tipCents ?? 0) / 100).toFixed(2)}</div>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+            <div style={{ opacity: 0.75 }}>Online Service Fee</div>
+            <div style={{ fontWeight: 900 }}>
+              ${((order.service_fee_cents ?? 0) / 100).toFixed(2)}
+            </div>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 0 }}>
+            <div style={{ opacity: 0.75 }}>Total</div>
+            <div style={{ fontWeight: 900 }}>
+              ${(order.totalWithTip ?? (order.total + (order.tipCents ?? 0) / 100)).toFixed(2)}
+            </div>
           </div>
         </div>
       </div>

@@ -55,7 +55,6 @@ export default function OrderSummary() {
           Order Summary
         </div>
       </div>
-
       <div style={{ marginTop: 12, borderTop: "1px solid #eaeaea", paddingTop: 10, display: "grid", gap: 8 }}>
         {(order.items ?? []).map((it) => (
           <div key={it.key}>

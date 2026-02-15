@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import CheckoutForm from "./CheckoutForm";
+import OrderSummary from "./OrderSummary";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 function money(n: number) {
@@ -139,11 +140,17 @@ useEffect(() => {
   }
 
   if (!clientSecret) {
-    return <div style={{ padding: 24 }}>Loading checkout…</div>;
+    return (
+      <div style={{ padding: 24 }}>
+        <OrderSummary />
+        <div style={{ marginTop: 12 }}>Loading checkout…</div>
+      </div>
+    );
   }
 
   return (
     <>
+      <OrderSummary />
       {/* ✅ Breakdown (matches success style) */}
       {order ? (
         <div

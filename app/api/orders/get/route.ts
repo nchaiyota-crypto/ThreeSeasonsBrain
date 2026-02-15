@@ -71,7 +71,7 @@ export async function GET(req: Request) {
 
   const { data: lineItems } = await supabase
     .from("order_items")
-    .select("menu_item_name, qty, base_price_cents, special_instructions")
+    .select("menu_item_name, qty, base_price_cents, options_summary, special_instructions")
     .eq("order_id", orderId);
 
   const items = (lineItems ?? []).map((it: any) => ({
@@ -79,7 +79,12 @@ export async function GET(req: Request) {
     name: it.menu_item_name,
     qty: it.qty,
     unitPrice: (it.base_price_cents ?? 0) / 100,
-    optionsSummary: it.special_instructions ?? "",
+
+    // ✅ protein/add-on
+    optionsSummary: it.options_summary ?? "",
+
+    // ✅ special request / note
+    specialInstructions: it.special_instructions ?? "",
   }));
 
   const subtotal_cents = Number(

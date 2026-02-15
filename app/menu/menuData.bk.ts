@@ -37,7 +37,6 @@ export type MenuItem = {
    Helpers
 ========================= */
 
-const MENU_IMAGE_BASE = "/images/menu/";
 const makeItem = (item: Omit<MenuItem, "imageUrl"> & { imageUrl?: string }): MenuItem => ({
   ...item,
   imageUrl: item.imageUrl ?? `/images/menu/${item.id}.jpg`,
@@ -63,19 +62,6 @@ const OPT_SOUP_PROTEIN_REQUIRED: MenuOption = {
   ],
 };
 
-const OPT_THAI_PUFF_FILLING_REQUIRED: MenuOption = {
-  id: "filling_required_thai_puff",
-  name: "Filling",
-  required: true,
-  minSelect: 1,
-  maxSelect: 1,
-  choices: [
-    { id: "taro", name: "Taro", priceDelta: 0 },
-    { id: "chicken", name: "Chicken", priceDelta: 0 },
-  ],
-};
-
-const REQUIRED_FILLING_IDS = new Set(["thai_puff"]);
 const REQUIRED_SOUP_IDS = new Set(["tom_yum_soup", "coconut_milk_soup"]); // Tom Yum + Tom Kha
 const REGULAR_PROTEIN_REQUIRED_CATEGORIES = new Set(["Entrée", "Curry", "Noodle/Fried Rice"]);
 
@@ -88,10 +74,6 @@ const REGULAR_PROTEIN_REQUIRED_CATEGORIES = new Set(["Entrée", "Curry", "Noodle
  * - Everything else -> no options by default
  */
 function getDefaultOptionsForItem(item: MenuItem): MenuOption[] {
-  //Thai puff fillings
-  if (REQUIRED_FILLING_IDS.has(item.id)) {
-    return [OPT_THAI_PUFF_FILLING_REQUIRED];
-  }
   // Soups
   if (item.category === "Soup") {
     if (REQUIRED_SOUP_IDS.has(item.id)) {
@@ -115,14 +97,14 @@ function getDefaultOptionsForItem(item: MenuItem): MenuOption[] {
 ========================= */
 
 const RAW_MENU_ITEMS: MenuItem[] = [
-  makeItem({
-    id: "tom_yum_soup",
-    name: "Lemongrass Soup (Tom Yum)",
-    description: "Hot & sour soup with choice of protein, mushroom, tomato, onion and cilantro",
+   makeItem({
+    id: "firecracker_prawn",
+    name: "Firecracker Prawn",
+    description: "Battered prawns, jalapeno, green onions, and cashew nut(7 pcs)",
     price: 13.95,
-    category: "Soup",
-  }),
-
+    category: "Appetizer",
+  }), 
+  
   makeItem({
     id: "cream_cheese_wonton",
     name: "Cream Cheese Wonton (7 pcs)",
@@ -156,17 +138,9 @@ const RAW_MENU_ITEMS: MenuItem[] = [
   }),
 
   makeItem({
-    id: "fresh_tofu_spring_roll",
-    name: "Fresh Tofu Spring Roll",
-    description: "Tofu with mixed vegetables wrapped in rice paper with peanut sauce",
-    price: 10.95,
-    category: "Appetizer",
-  }),
-
-   makeItem({
-    id: "fresh_summer_roll",
-    name: "Fresh Summer Roll (Shrimp)",
-    description: "Shrimp with mixed vegetables wrapped in rice paper with peanut sauce",
+    id: "fresh_spring_roll",
+    name: "Fresh Spring Roll (Shrimp or Tofu)",
+    description: "Mixed vegetables wrapped in rice paper with peanut sauce",
     price: 12.95,
     category: "Appetizer",
   }),
@@ -184,6 +158,14 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     name: "3 Season Chicken Wings (7 pcs)",
     description: "Chicken wings with homemade sweet & sour sauce",
     price: 12.95,
+    category: "Appetizer",
+  }),
+
+    makeItem({
+    id: "garic_noodle",
+    name: "Garlic Noodle",
+    description: "Egg Noodle Tossed with Fresh Garlic, Butter, and Topped with Parmesan Cheese",
+    price: 8.95,
     category: "Appetizer",
   }),
 
@@ -211,6 +193,14 @@ const RAW_MENU_ITEMS: MenuItem[] = [
       "Sliced mango, onion, cilantro, carrot, cucumber, cashew nut mixed with lime dressing, topped with steamed prawns",
     price: 13.95,
     category: "Salad",
+  }),
+
+  makeItem({
+    id: "tom_yum_soup",
+    name: "Lemongrass Soup (Tom Yum)",
+    description: "Hot & sour soup with choice of protein, mushroom, tomato, onion and cilantro",
+    price: 13.95,
+    category: "Soup",
   }),
 
   makeItem({
@@ -271,6 +261,14 @@ const RAW_MENU_ITEMS: MenuItem[] = [
   }),
 
   makeItem({
+    id: "eggplant_delight",
+    name: "Eggplant Delight",
+    description: "Onion, bell pepper, carrot, eggplant and basil",
+    price: 14.95,
+    category: "Entrée",
+  }),
+
+  makeItem({
     id: "pad_thai",
     name: "Pad Thai",
     description: "Rice noodle, egg, bean sprout, green onion, ground peanut",
@@ -282,7 +280,7 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     id: "pad_see_ew",
     name: "Pad See Ew",
     description: "Flat rice noodle, egg, Chinese broccoli, sweet soy sauce",
-    price: 15.95,
+    price: 14.95,
     category: "Noodle/Fried Rice",
   }),
 
@@ -290,14 +288,22 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     id: "drunken_noodle",
     name: "Drunken Noodle",
     description: "Flat rice noodle, egg, onion, bell pepper, basil, chili",
-    price: 15.95,
+    price: 14.95,
+    category: "Noodle/Fried Rice",
+  }),
+
+    makeItem({
+    id: "chow_mien_noodle",
+    name: "Chow Mien Noodle",
+    description: "Egg noodle, sesame oil, broccoli, carrot, mushroom, baby corn and bean sprout",
+    price: 14.95,
     category: "Noodle/Fried Rice",
   }),
 
   makeItem({
     id: "pineapple_fried_rice",
     name: "Pineapple Fried Rice",
-    description: "pineapple, jasmine rice, egg, onion, cashew nut, raisin curry powder",
+    description: "Jasmine rice, pineapple, egg, onion, cashew nut, curry powder",
     price: 15.95,
     category: "Noodle/Fried Rice",
   }),
@@ -305,7 +311,7 @@ const RAW_MENU_ITEMS: MenuItem[] = [
   makeItem({
     id: "thai_fried_rice",
     name: "Thai Fried Rice",
-    description: "Jasmine rice, egg, onion, carrot and green onion",
+    description: "Jasmine rice, egg, onion, tomato and green onion",
     price: 14.95,
     category: "Noodle/Fried Rice",
   }),
@@ -313,7 +319,7 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     makeItem({
     id: "crab_fried_rice",
     name: "Crab Fried Rice",
-    description: "Crab meat, jasmine rice, egg, onion, carrot and green onion",
+    description: "Jasmine rice, egg, onion, tomato and green onion",
     price: 14.95,
     category: "Noodle/Fried Rice",
   }),
@@ -436,7 +442,7 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     id: "crispy_fried_pompano",
     name: "Crispy Fried Pompano",
     description: "Golden pompano fillet with fruit salad and tangy lime dressing",
-    price: 28.0,
+    price: 34.0,
     category: "House Specials",
     imageUrl: "/images/menu/crispy_fried_pompano.jpg",
   }),
@@ -477,7 +483,7 @@ const RAW_MENU_ITEMS: MenuItem[] = [
   makeItem({
     id: "lobster_pad_thai",
     name: "Lobster Pad Thai",
-    description: "Sous-vide lobster with rice noodles, bean sprouts and egg",
+    description: "Sous-vide lobster with rice noodles, bean sprouts and crispy egg threads",
     price: 35.0,
     category: "House Specials",
   }),
@@ -485,7 +491,7 @@ const RAW_MENU_ITEMS: MenuItem[] = [
   makeItem({
     id: "lobster_khao_soi",
     name: "Lobster Khao Soi",
-    description: "Sous-vide lobster with Egg noodles in Northern Thai curry style and topped with Crispy egg noodle",
+    description: "Sous-vide lobster with egg noodles in northern Thai curry style",
     price: 38.0,
     category: "House Specials",
   }),
@@ -556,6 +562,14 @@ const RAW_MENU_ITEMS: MenuItem[] = [
   }),
 
   makeItem({
+    id: "raspberry_cheesecake",
+    name: "Raspberry Cheesecake",
+    description: "Raspberry Cheesecake with Chocolate Crumble and Fresh Raspberry and Purée",
+    price: 13.00,
+    category: "Dessert",
+  }),
+
+  makeItem({
     id: "thai_iced_tea",
     name: "Thai Iced Tea",
     price: 5.5,
@@ -586,7 +600,5 @@ const RAW_MENU_ITEMS: MenuItem[] = [
 
 export const menuItems: MenuItem[] = RAW_MENU_ITEMS.map((item) => ({
   ...item,
-  options: item.options && item.options.length
-    ? item.options
-    : getDefaultOptionsForItem(item),
+  options: item.options && item.options.length ? item.options : getDefaultOptionsForItem(item),
 }));

@@ -109,7 +109,7 @@ export async function POST(req: Request) {
         it?.optionsSummary ??
         it?.options_summary ??
         it?.modifiersSummary ??
-        (Array.isArray(it?.modifiers) ? it.modifiers.join(" • ") : null) ??
+        it?.modifiers?.join?.(" • ")
         null;
 
       return {

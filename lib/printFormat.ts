@@ -129,6 +129,7 @@ export function buildKitchenTicketText(input: KitchenInput) {
   if (typeof input.guestCount === "number") L.push(`Guest: ${input.guestCount}`);
   if (input.terminalName) L.push(`Terminal: ${input.terminalName}`);
   if (input.customerName) L.push(`Name: ${input.customerName}`);
+  
 
   L.push(`Order: ${input.orderNumber}`);
   L.push(`Time: ${new Date(input.createdAtISO).toLocaleString()}`);

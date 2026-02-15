@@ -20,9 +20,6 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {/* ✅ Summary (items + totals) */}
-        <OrderSummary />
-
         {/* Card */}
         <div style={{ background: "#fff", border: "1px solid #e8e8e8", borderRadius: 16, padding: 18, boxShadow: "0 6px 18px rgba(0,0,0,0.06)" }}>
           <CheckoutClient />

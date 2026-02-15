@@ -15,6 +15,8 @@ type LastOrder = {
     qty: number;
     name: string;
     optionsSummary?: string;
+    specialInstructions?: string;
+    note?: string; // optional fallback
   }>;
 };
 
@@ -63,6 +65,11 @@ export default function OrderSummary() {
             </div>
             {it.optionsSummary ? (
               <div style={{ fontSize: 12, opacity: 0.7 }}>{it.optionsSummary}</div>
+            ) : null}
+            {(it.specialInstructions || it.note) ? (
+              <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
+                <b>Note:</b> {it.specialInstructions || it.note}
+              </div>
             ) : null}
           </div>
         ))}

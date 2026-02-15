@@ -14,6 +14,7 @@ type CartLine = {
   category: string;
   imageUrl?: string;
   optionsSummary?: string;
+  note?: string;
 };
 
 const TAX_RATE = 0.1075; // Oakland 10.75%
@@ -32,7 +33,7 @@ type DayKey = 0 | 1 | 2 | 3 | 4 | 5 | 6; // Sun=0 ... Sat=6
 type Hours = { closed?: boolean; open: string; close: string };
 
 const BUSINESS_HOURS: Record<DayKey, Hours> = {
-  0: { open: "16:00", close: "21:00" }, // Sun
+  0: { open: "11:00", close: "21:00" }, // Sun
   1: { closed: true, open: "00:00", close: "00:00" }, // Mon CLOSED
   2: { open: "16:00", close: "21:00" }, // Tue
   3: { open: "16:00", close: "21:00" }, // Wed
@@ -121,6 +122,9 @@ function buildCategoryOrder(categories: string[]) {
 function isRequiredProteinOption(opt: MenuOption) {
   return opt.required && opt.maxSelect === 1 && opt.name.toLowerCase().includes("protein");
 }
+function isRequiredSingleOption(opt: MenuOption) {
+  return opt.required && (opt.maxSelect ?? 1) === 1;
+}
 
 function isProteinAddonOption(opt: MenuOption) {
   const n = opt.name.toLowerCase();
@@ -188,6 +192,19 @@ function buildOptionsSummary(item: MenuItem, selected: Record<string, string[]>)
     }
   }
 
+      // ✅ Other required singles (ex: Filling)
+    for (const opt of item.options ?? []) {
+      if (!isRequiredSingleOption(opt)) continue;
+      if (isRequiredProteinOption(opt)) continue; // already handled above
+
+      const cid = (selected[opt.id] ?? [])[0] ?? null;
+      const ch = choiceById(opt, cid);
+      if (ch) {
+        const extra = ch.priceDelta ? ` (+$${money(ch.priceDelta)})` : "";
+        parts.push(`${opt.name}: ${ch.name}${extra}`);
+      }
+    }
+
   const vegAdd = (item.options ?? []).find(isVegAddonOption);
   if (vegAdd) {
     const picked = selected[vegAdd.id] ?? [];
@@ -210,6 +227,7 @@ function buildOptionsSummary(item: MenuItem, selected: Record<string, string[]>)
  * Wizard steps
  * -------------------------- */
 type Step =
+  | { kind: "required_single"; option: MenuOption }
   | { kind: "required_protein"; option: MenuOption }
   | { kind: "protein_addon"; option: MenuOption }
   | { kind: "veg_addon"; option: MenuOption }
@@ -219,11 +237,20 @@ function buildSteps(item: MenuItem): Step[] {
   const opts = item.options ?? [];
   const steps: Step[] = [];
 
-  const reqProtein = opts.find(isRequiredProteinOption);
+  // ✅ Add ANY required single-select option first (ex: Filling)
+  const requiredSingles = opts.filter(isRequiredSingleOption);
+
+  for (const opt of requiredSingles) {
+    if (isRequiredProteinOption(opt)) {
+      steps.push({ kind: "required_protein", option: opt });
+    } else {
+      steps.push({ kind: "required_single", option: opt });
+    }
+  }
+
   const proteinAdd = opts.find(isProteinAddonOption);
   const vegAdd = opts.find(isVegAddonOption);
 
-  if (reqProtein) steps.push({ kind: "required_protein", option: reqProtein });
   if (proteinAdd) steps.push({ kind: "protein_addon", option: proteinAdd });
   if (vegAdd) steps.push({ kind: "veg_addon", option: vegAdd });
 
@@ -365,6 +392,9 @@ export default function MenuPage() {
   const [qty, setQty] = useState(1);
   const [selected, setSelected] = useState<Record<string, string[]>>({});
 
+  // ✅ Special instructions (per item)
+  const [note, setNote] = useState("");
+  
   // ---------------------------
   // Pickup + Cart state
   // ---------------------------
@@ -580,11 +610,14 @@ export default function MenuPage() {
   }
 
   function openWizard(item: MenuItem) {
+    console.log("OPTIONS FOR", item.id, item.options);
+
     const hasOptions = (item.options?.length ?? 0) > 0;
     if (!hasOptions) {
       addDirectToCart(item);
       return;
     }
+    console.log("STEPS FOR", item.id, buildSteps(item));
 
     const s = buildSteps(item);
     setActiveItem(item);
@@ -592,6 +625,7 @@ export default function MenuPage() {
     setStepIndex(0);
     setQty(1);
     setSelected({});
+    setNote(""); // ✅ reset special instructions
     setCartOpen(false);
     setIsModalOpen(true);
   }
@@ -653,12 +687,15 @@ export default function MenuPage() {
     return activeItem.price + delta;
   }, [activeItem, selected]);
 
+  function prevStep() {
+    setStepIndex((i) => Math.max(0, i - 1));
+  }
   function canGoNext() {
     if (!activeItem) return false;
     const step = steps[stepIndex];
     if (!step) return false;
 
-    if (step.kind === "required_protein") {
+    if (step.kind === "required_protein" || step.kind === "required_single") {
       const picked = selected[step.option.id] ?? [];
       return picked.length === 1;
     }
@@ -667,14 +704,15 @@ export default function MenuPage() {
 
   function nextStep() {
     if (!canGoNext()) {
-      alert("Please select a protein.");
+      const step = steps[stepIndex];
+      const label =
+        step && (step.kind === "required_protein" || step.kind === "required_single")
+          ? step.option.name
+          : "an option";
+      alert(`Please select ${label}.`);
       return;
     }
     setStepIndex((i) => Math.min(steps.length - 1, i + 1));
-  }
-
-  function prevStep() {
-    setStepIndex((i) => Math.max(0, i - 1));
   }
 
   function toggleMulti(optionId: string, choiceId: string) {
@@ -693,18 +731,20 @@ export default function MenuPage() {
   function confirmAddToCart() {
     if (!activeItem) return;
 
-    const reqProtein = (activeItem.options ?? []).find(isRequiredProteinOption);
-    if (reqProtein) {
-      const picked = selected[reqProtein.id] ?? [];
-      if (picked.length !== 1) {
-        alert("Please select a protein.");
-        return;
+    for (const opt of activeItem.options ?? []) {
+      if (isRequiredSingleOption(opt)) {
+        const picked = selected[opt.id] ?? [];
+        if (picked.length !== 1) {
+          alert(`Please select ${opt.name}.`);
+          return;
+        }
       }
     }
 
     const delta = sumSelectedDeltaDollars(activeItem, selected);
     const unitPrice = activeItem.price + delta;
     const optionsSummary = buildOptionsSummary(activeItem, selected);
+    const noteText = note.trim() || undefined;
 
     const optKey = (activeItem.options ?? [])
       .map((opt) => {
@@ -714,7 +754,8 @@ export default function MenuPage() {
       .sort()
       .join("|");
 
-    const key = `${activeItem.id}|${optKey || "no-options"}`;
+    const noteKey = (note || "").trim();
+    const key = `${activeItem.id}|${optKey || "no-options"}|note=${encodeURIComponent(noteKey)}`;
 
     setCart((prev) => {
       const idx = prev.findIndex((l) => l.key === key);
@@ -734,6 +775,7 @@ export default function MenuPage() {
           category: activeItem.category,
           imageUrl: activeItem.imageUrl,
           optionsSummary,
+          note: noteText,
         },
       ];
     });
@@ -1093,6 +1135,11 @@ export default function MenuPage() {
 
                       {line.optionsSummary ? (
                         <div style={{ marginTop: 6, fontSize: 12, opacity: 0.75 }}>{line.optionsSummary}</div>
+                      ) : null}
+                      {line.note ? (
+                        <div style={{ marginTop: 6, fontSize: 12, opacity: 0.75 }}>
+                          <b>Note:</b> {line.note}
+                        </div>
                       ) : null}
 
                       <div
@@ -1533,6 +1580,11 @@ export default function MenuPage() {
                       {line.optionsSummary ? (
                         <div style={{ marginTop: 6, fontSize: 12, opacity: 0.75 }}>{line.optionsSummary}</div>
                       ) : null}
+                      {line.note ? (
+                        <div style={{ marginTop: 6, fontSize: 12, opacity: 0.75 }}>
+                          <b>Note:</b> {line.note}
+                        </div>
+                      ) : null}
 
                       <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1840,7 +1892,7 @@ export default function MenuPage() {
                   {(() => {
                     const step = steps[stepIndex];
 
-                    if (step.kind === "required_protein") {
+                    if (step.kind === "required_protein" || step.kind === "required_single") {
                       const opt = step.option;
                       const picked = (selected[opt.id] ?? [])[0] ?? "";
                       return (
@@ -1936,7 +1988,28 @@ export default function MenuPage() {
                     return (
                       <div>
                         <div style={{ fontWeight: 900, fontSize: 16 }}>Quantity</div>
+                        {/* ✅ Special Instructions */}
+                        <div style={{ marginTop: 14 }}>
+                          <div style={{ fontWeight: 900, fontSize: 14, marginBottom: 6 }}>
+                            Special Instructions (Optional)
+                          </div>
 
+                          <textarea
+                            value={note}
+                            onChange={(e) => setNote(e.target.value)}
+                            placeholder="Ex: extra crispy, no sauce, allergy notes..."
+                            style={{
+                              width: "100%",
+                              minHeight: 70,
+                              borderRadius: 12,
+                              border: "1px solid #e1e1e1",
+                              padding: 10,
+                              outline: "none",
+                              resize: "vertical",
+                              fontSize: 14,
+                            }}
+                          />
+                        </div>
                         <div style={{ display: "flex", gap: 12, marginTop: 12, alignItems: "center" }}>
                           <button
                             type="button"
