@@ -139,9 +139,17 @@ const RAW_MENU_ITEMS: MenuItem[] = [
   }),
 
   makeItem({
-    id: "fresh_spring_roll",
-    name: "Fresh Spring Roll (Shrimp or Tofu)",
-    description: "Mixed vegetables wrapped in rice paper with peanut sauce",
+    id: "fresh_tofu_spring_roll",
+    name: "Fresh Tofu Spring Roll",
+    description: "Tofu with mixed vegetables wrapped in rice paper with peanut sauce",
+    price: 10.95,
+    category: "Appetizer",
+  }),
+
+   makeItem({
+    id: "fresh_summer_roll",
+    name: "Fresh Summer Roll (Shrimp)",
+    description: "Shrimp with mixed vegetables wrapped in rice paper with peanut sauce",
     price: 12.95,
     category: "Appetizer",
   }),
