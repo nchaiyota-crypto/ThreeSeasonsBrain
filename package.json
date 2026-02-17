@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3000",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3000",
     "lint": "next lint",
     "stripe:listen": "stripe listen --forward-to http://localhost:3000/api/stripe/webhook",
     "dev:all": "concurrently \"npm run dev\" \"npm run stripe:listen\""

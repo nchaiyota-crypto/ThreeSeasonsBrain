@@ -38,6 +38,8 @@
   ],
   "exclude": [
     "node_modules",
+    "**/*.bk.ts",
+    "**/*.bk.tsx",
     "supabase",
     "printer-worker",
     "printer-worker@1.0.0",

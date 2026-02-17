@@ -58,21 +58,42 @@ export default function OrderSummary() {
         </div>
       </div>
       <div style={{ marginTop: 12, borderTop: "1px solid #eaeaea", paddingTop: 10, display: "grid", gap: 8 }}>
-        {(order.items ?? []).map((it) => (
-          <div key={it.key}>
-            <div style={{ fontWeight: 800 }}>
-              {it.qty}× {it.name}
-            </div>
-            {it.optionsSummary ? (
-              <div style={{ fontSize: 12, opacity: 0.7 }}>{it.optionsSummary}</div>
-            ) : null}
-            {(it.specialInstructions || it.note) ? (
-              <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
-                <b>Note:</b> {it.specialInstructions || it.note}
+        {(order.items ?? []).map((it: any, idx: number) => {
+          const key =
+            it.key ??
+            `${it.itemId ?? it.menu_item_id ?? it.name ?? "item"}-${idx}`;
+
+          const options =
+            it.optionsSummary ??
+            it.options_summary ??
+            it.modifiersSummary ??
+            "";
+
+          const note =
+            it.specialInstructions ??
+            it.special_instructions ??
+            it.note ??
+            it.instructions ??
+            "";
+
+          return (
+            <div key={key}>
+              <div style={{ fontWeight: 800 }}>
+                {it.qty}× {it.name}
               </div>
-            ) : null}
-          </div>
-        ))}
+
+              {options ? (
+                <div style={{ fontSize: 12, opacity: 0.7 }}>{options}</div>
+              ) : null}
+
+              {note ? (
+                <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
+                  <b>Note:</b> {note}
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

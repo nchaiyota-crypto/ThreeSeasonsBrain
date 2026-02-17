@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+export const runtime = "nodejs";
+
 function must(name: string) {
   const v = process.env[name];
   if (!v) throw new Error(`Missing env var: ${name}`);
@@ -9,27 +11,53 @@ function must(name: string) {
 
 export async function POST(req: Request) {
   try {
-    const { orderId, customerName, customerPhone, smsOptIn } = await req.json();
+    console.log("✅ /api/orders/customer HIT");
+    const body = await req.json();
+    console.log("✅ body =", body);
 
+    const orderId = String(body.orderId || "");
     if (!orderId) return NextResponse.json({ error: "Missing orderId" }, { status: 400 });
+
+    const customerName = String(body.customerName ?? body.customer_name ?? "").trim() || null;
+    const customerPhone = body.customerPhone ?? body.customer_phone ?? null;
+    const smsOptIn = !!(body.smsOptIn ?? body.sms_opt_in);
 
     const supabase = createClient(
       must("NEXT_PUBLIC_SUPABASE_URL"),
-      must("SUPABASE_SERVICE_ROLE_KEY")
+      must("SUPABASE_SERVICE_ROLE_KEY"),
+      { auth: { persistSession: false } }
     );
 
-    const { error } = await supabase
-      .from("orders")
-      .update({
-        customer_name: customerName ?? null,
-        customer_phone: customerPhone ?? null,
-        sms_opt_in: !!smsOptIn,
-      })
-      .eq("id", orderId);
+    console.log("✅ parsed:", { orderId, customerName, customerPhone, smsOptIn });
+    // 1) update ORDERS (source of truth)
+    const patchOrders: any = {
+    customer_phone: customerPhone,
+    sms_opt_in: smsOptIn,
+    };
+    if (customerName) patchOrders.customer_name = customerName;
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    const { data: orderRow, error: ordErr } = await supabase
+    .from("orders")
+    .update(patchOrders)
+    .eq("id", orderId)
+    .select("id, order_number, customer_name, customer_phone, sms_opt_in")
+    .single();
+    console.log("✅ orders updated:", orderRow, "err:", ordErr?.message);
 
-    return NextResponse.json({ ok: true });
+    if (ordErr) {
+    return NextResponse.json({ error: ordErr.message }, { status: 400 });
+    }
+
+    // 2) sync KDS ticket (ONLY if it exists already)
+    await supabase
+    .from("kds_tickets")
+    .update({
+        customer_name: orderRow.customer_name,
+        customer_phone: orderRow.customer_phone,
+    })
+    .eq("order_id", orderId);
+
+    return NextResponse.json({ ok: true, updated: orderRow });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message ?? "Unknown error" }, { status: 500 });
   }

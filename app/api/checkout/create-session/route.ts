@@ -44,6 +44,11 @@ export async function POST(req: Request) {
     const orderType =
       body?.order_type === "dine_in" || body?.order_type === "phone" ? body.order_type : "takeout";
 
+
+    console.log("CREATE ORDER body keys:", Object.keys(body || {}));
+    console.log("customerName:", body?.customerName);
+    console.log("customer_name:", body?.customer_name);
+    console.log("name:", body?.name);  
     const insertRow: any = {
       source: body?.source ?? "online", // your schema shows `source` default 'ipad' - online is ok
       order_type: orderType,            // ✅ FIX #1 (required + must match check constraint)

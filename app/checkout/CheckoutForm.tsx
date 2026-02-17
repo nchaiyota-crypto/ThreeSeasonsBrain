@@ -31,6 +31,48 @@ export default function CheckoutForm() {
 
     try {
   const o = JSON.parse(raw);
+      
+  useEffect(() => {
+  const t = setTimeout(async () => {
+    try {
+      const raw = localStorage.getItem("last_order");
+      if (!raw) return;
+      const o = JSON.parse(raw);
+      if (!o?.orderId) return;
+
+      const phoneE164 = normalizeUSPhone(customerPhone);
+
+      // ✅ update localStorage
+      localStorage.setItem(
+        "last_order",
+        JSON.stringify({
+          ...o,
+          customerName,
+          customerPhone,
+          smsOptIn,
+        })
+      );
+
+      // ✅ save to DB only if name exists
+      if (customerName.trim()) {
+        await fetch("/api/orders/customer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderId: o.orderId,
+            customerName: customerName.trim(),
+            customerPhone: phoneE164 ?? null,
+            smsOptIn,
+          }),
+        });
+      }
+    } catch {
+      // ignore
+    }
+  }, 500);
+
+  return () => clearTimeout(t);
+}, [customerName, customerPhone, smsOptIn]);
 
   if (o?.customerName) setCustomerName(o.customerName);
   if (o?.customerPhone) setCustomerPhone(o.customerPhone);
@@ -118,26 +160,35 @@ export default function CheckoutForm() {
 
     // If they want SMS, phone must be valid
     if (smsOptIn && !phoneE164) {
-      setMessage("Please enter a valid US phone number (ex: 415-499-2031).");
+      setMessage("Please enter a valid US phone number (ex: 510-479-3339).");
       return;
     }
 
         // ✅ Save customer name/phone/opt-in to Supabase BEFORE payment
-    try {
-      await fetch("/api/orders/customer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderId,
-          customerName: name,
-          customerPhone: phoneE164, // ✅ normalized
-          smsOptIn,
-        }),
-      });
-    } catch (e) {
-      console.warn("Failed to save customer info:", e);
-      // don't block payment for this
-    }
+        try {
+          const res = await fetch("/api/orders/customer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              orderId,
+              customerName: name,
+              customerPhone: phoneE164,
+              smsOptIn,
+            }),
+          });
+          const data = await res.json().catch(() => ({}));
+
+          if (!res.ok) {
+            console.error("customer failed:", res.status, data);
+            setMessage(data?.error ?? "Failed to save customer info");
+            return; // ✅ block payment until DB saves (for now)
+          }
+          console.log("✅ updated:", data);
+        } catch (e) {
+          console.error("❌ customer save crashed:", e);
+          setMessage("Failed to save customer info (network error)");
+          return; // block for now
+        }
 
         // ✅ REAL TIP: update PaymentIntent amount BEFORE confirmPayment
     if (tipCents > 0) {
@@ -240,7 +291,7 @@ export default function CheckoutForm() {
               <input
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="e.g. Narin Chaiyota"
+                placeholder="e.g. Enter full name "
                 style={{
                   height: 44,
                   borderRadius: 12,
@@ -262,7 +313,7 @@ export default function CheckoutForm() {
               <input
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
-                placeholder="e.g. 415-499-2031"
+                placeholder="e.g. Enter phone number"
                 style={{
                   height: 44,
                   borderRadius: 12,

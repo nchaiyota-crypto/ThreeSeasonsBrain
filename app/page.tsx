@@ -290,8 +290,8 @@ export default function HomePage() {
             >
               <div style={{ fontWeight: 950, marginBottom: 10 }}>Hours</div>
               <div style={{ color: "#333", lineHeight: 1.7 }}>
-                <div>Mon: 4:00 PM – 9:00 PM</div>
-                <div>Tue: Close </div>
+                <div>Mon: Close </div>
+                <div>Tue: 4:00 PM – 9:00 PM</div>
                 <div>Wed–Thu: 4:00 PM – 9:00 PM</div>
                 <div>Fri–Sun: 11:00 AM – 9:00 PM</div>
               </div>
@@ -305,7 +305,8 @@ export default function HomePage() {
 
               <div style={{ marginTop: 16 }}>
                 <Link
-                  href="/menu"
+                  href={ws?.paused ? "#" : "/menu"}
+                  onClick={(e) => { if (ws?.paused) e.preventDefault(); }}
                   style={{
                     width: "100%",
                     height: 44,
@@ -317,6 +318,8 @@ export default function HomePage() {
                     justifyContent: "center",
                     fontWeight: 950,
                     textDecoration: "none",
+                    opacity: ws?.paused ? 0.6 : 1,
+                    pointerEvents: ws?.paused ? "none" : "auto",
                   }}
                 >
                   Order Now →

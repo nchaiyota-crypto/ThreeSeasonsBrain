@@ -12,7 +12,7 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 
 type Order = {
   orderId?: string;
-
+  customerName?: string;
   orderNumber: string;
   items: any[];
   subtotal: number;
@@ -275,6 +275,7 @@ export default function CheckoutSuccess() {
 
         const finalOrder: Order = {
           ...last,
+          customerName: String(supa?.customerName ?? supa?.customer_name ?? last.customerName ?? ""),
           orderId: targetOrderId,
           orderNumber: String(supa?.orderNumber ?? last.orderNumber),
           items: mergedItems,
@@ -346,6 +347,11 @@ export default function CheckoutSuccess() {
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
           <div>
             <div style={{ fontWeight: 900 }}>Order #{order.orderNumber}</div>
+            {order.customerName ? (
+              <div style={{ fontSize: 13, opacity: 0.75, marginTop: 4 }}>
+                Name: {order.customerName}
+              </div>
+            ) : null}
             <div style={{ fontSize: 13, opacity: 0.75, marginTop: 4 }}>Pickup: {pickupText}</div>
           </div>
           <div style={{ fontWeight: 900, fontSize: 16 }}>

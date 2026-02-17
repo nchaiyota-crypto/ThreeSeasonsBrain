@@ -58,7 +58,7 @@ export async function POST(req: Request) {
       const { error: updErr } = await supabase
         .from("orders")
         .update({
-          customer_name: customerName,
+          ...(customerName ? { customer_name: customerName } : {}),
           payment_status: "paid",
           status: "paid",                // ✅ allowed by constraint
           total_cents: baseAmount, // ✅ optional, see note below
@@ -84,64 +84,79 @@ export async function POST(req: Request) {
       const orderNumber = Number(orderMeta?.order_number ?? pi.metadata?.order_number ?? 0);
 
       // 2) Create KDS ticket + items (match real schema)
+      // 2) Create KDS ticket + items
       try {
-        // A) Create (or upsert) the ticket
-        const { data: ticket, error: kdsErr } = await supabase
-          .from("kds_tickets")
-          .insert({
-            order_id: orderId,
-            station: "kitchen",
-            status: "new",
-            order_number: orderNumber,
-          })
-          .select("id")
+        // Get fresh order info (source of truth)
+        const { data: orderRow, error: orderRowErr } = await supabase
+          .from("orders")
+          .select("customer_name, customer_phone, order_number")
+          .eq("id", orderId)
           .single();
 
+        if (orderRowErr) {
+          console.error("❌ Could not load order row for ticket:", orderRowErr.message);
+        }
+
+        const safeCustomerName = orderRow?.customer_name ?? customerName ?? null;
+        const safeCustomerPhone = orderRow?.customer_phone ?? null;
+
+        console.log("✅ webhook orderId:", orderId);
+        console.log("✅ webhook safeCustomer:", { safeCustomerName, safeCustomerPhone });
+
+        // ✅ Upsert ticket so webhook can run twice without duplicates
+        const { data: ticket, error: kdsErr } = await supabase
+          .from("kds_tickets")
+          .upsert(
+            {
+              order_id: orderId,
+              station: "kitchen",
+              status: "new",
+              customer_name: safeCustomerName,
+              customer_phone: safeCustomerPhone,
+            },
+            { onConflict: "order_id" }
+          )
+          .select("id, order_id, customer_name, customer_phone")
+          .single();
+
+        console.log("✅ webhook ticket row:", ticket);
+
         if (kdsErr) {
-          console.error("❌ KDS ticket insert failed:", kdsErr.message);
-        } else {
-        // B) Load order items from public.order_items (so we have order_item_id)
+          console.error("❌ KDS ticket upsert failed:", kdsErr.message);
+          return NextResponse.json({ received: true });
+        }
+
+        // B) Load order items
         const { data: orderItems, error: oiErr } = await supabase
           .from("order_items")
-          .select("*") // adjust column names if yours differ
+          .select("id, menu_item_name, qty, options_summary, special_instructions, created_at")
           .eq("order_id", orderId)
           .order("created_at", { ascending: true });
 
         if (oiErr) {
           console.error("❌ Could not load public.order_items:", oiErr.message);
-        } else {
-          const ticketItems = (orderItems ?? []).map((it: any) => ({
-            kds_ticket_id: ticket.id,              // ✅ correct FK
-            order_item_id: it.id,                  // ✅ NOT NULL REQUIRED
-            display_name: String(it.menu_item_name ?? "Item"),
-            qty: Number(it.qty ?? 1),
-            modifiers_text: (() => {
-              const raw =
-                it.options_summary ??
-                it.optionsSummary ??
-                it.modifiers_text ??
-                it.modifiers ??
-                it.options ??
-                null;
-
-              if (!raw) return null;
-
-              return String(raw).replace(/\s*•\s*/g, "\n");
-            })(),
-            instructions_text: it.special_instructions ? String(it.special_instructions) : null,
-            status: "new",
-          }));
-
-          if (ticketItems.length > 0) {
-            const { error: itemsErr } = await supabase
-              .from("kds_ticket_items")
-              .insert(ticketItems);
-
-            if (itemsErr) console.error("❌ kds_ticket_items insert failed:", itemsErr.message);
-          } else {
-            console.warn("⚠️ order_items empty — no ticket items inserted");
-          }
+          return NextResponse.json({ received: true });
         }
+
+        // ✅ Prevent duplicate inserts if webhook runs twice:
+        // delete existing ticket items for this ticket then re-insert
+        await supabase.from("kds_ticket_items").delete().eq("kds_ticket_id", ticket.id);
+
+        const ticketItems = (orderItems ?? []).map((it) => ({
+          kds_ticket_id: ticket.id,
+          order_item_id: it.id,
+          display_name: String(it.menu_item_name ?? "Item"),
+          qty: Number(it.qty ?? 1),
+          modifiers_text: it.options_summary ? String(it.options_summary).replace(/\s*•\s*/g, "\n") : null,
+          instructions_text: it.special_instructions ? String(it.special_instructions) : null,
+          status: "new",
+        }));
+
+        if (ticketItems.length > 0) {
+          const { error: itemsErr } = await supabase.from("kds_ticket_items").insert(ticketItems);
+          if (itemsErr) console.error("❌ kds_ticket_items insert failed:", itemsErr.message);
+        } else {
+          console.warn("⚠️ order_items empty — no ticket items inserted");
         }
       } catch (err: any) {
         console.error("❌ KDS insert exception:", err?.message ?? err);

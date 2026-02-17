@@ -9,6 +9,8 @@ type TicketOrder = {
   order_number?: number | null;
   order_type?: string | null;
   source?: string | null;
+  customer_name?: string | null;   // ✅ add
+  customer_phone?: string | null;  // ✅ add
 };
 
 type TicketRow = {
@@ -17,7 +19,9 @@ type TicketRow = {
   station: string;
   status: "new" | "in_progress" | "done" | string;
   created_at: string;
-  orders?: TicketOrder[] | null; // supabase returns array for nested select
+  customer_name?: string | null;   // ✅ ADD
+  customer_phone?: string | null;  // ✅ ADD
+  orders?: TicketOrder[] | null;   // supabase returns array for nested select
 };
 
 type TicketItemRow = {
@@ -63,7 +67,11 @@ export default function KDSPage() {
     // ✅ Load tickets (kitchen, new + in_progress)
     const ticketsRes = await supabase
       .from("kds_tickets")
-      .select("id, order_id, station, status, created_at, orders(order_number, order_type, source)")
+      .select(`
+        id, order_id, station, status, created_at,
+        customer_name, customer_phone,
+        orders(order_number, order_type, source, customer_name, customer_phone)
+      `)
       .eq("station", "kitchen")
       .in("status", ["new", "in_progress"])
       .order("created_at", { ascending: true })
@@ -106,7 +114,11 @@ export default function KDSPage() {
 
     const ticketsRes = await sb
       .from("kds_tickets")
-      .select("id, order_id, station, status, created_at, orders(order_number, order_type, source)")
+      .select(`
+        id, order_id, station, status, created_at,
+        customer_name, customer_phone,
+        orders(order_number, order_type, source, customer_name, customer_phone)
+      `)
       .eq("station", "kitchen")
       .in("status", ["new", "in_progress"])
       .order("created_at", { ascending: true })
@@ -316,6 +328,12 @@ export default function KDSPage() {
         <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
           {tickets.map((t) => {
             const orderNum = t.orders?.[0]?.order_number ?? "—"; // ✅ FIXED (orders is array)
+            const customerName =
+              t.customer_name ?? t.orders?.[0]?.customer_name ?? "";
+            const customerPhone =
+              t.customer_phone ?? t.orders?.[0]?.customer_phone ?? "";
+            const customerLine =
+              [customerName, customerPhone].filter(Boolean).join(" • ");
             const isBusy = !!submitting[t.id];
 
             return (
@@ -323,6 +341,11 @@ export default function KDSPage() {
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
                   <div>
                     <div style={{ fontWeight: 900, fontSize: 18 }}>Order #{orderNum}</div>
+                    {customerLine ? (
+                      <div style={{ opacity: 0.75, fontSize: 13, marginTop: 2 }}>
+                        {customerLine}
+                      </div>
+                    ) : null}
                     <div style={{ opacity: 0.7, fontSize: 12 }}>Ticket: {t.id}</div>
                   </div>
                   <div style={{ textAlign: "right" }}>

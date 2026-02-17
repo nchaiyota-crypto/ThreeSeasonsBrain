@@ -62,6 +62,9 @@ export async function POST(req: Request) {
         tax_bps: TAX_BPS,
         tax_cents: taxCents,
         total_cents: totalCents,
+        customer_name: body.customerName ?? null,
+        customer_phone: body.customerPhone ?? null,
+        sms_opt_in: !!body.smsOptIn,
       })
       .select("id, order_number")
       .single();

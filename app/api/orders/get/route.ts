@@ -104,6 +104,7 @@ export async function GET(req: Request) {
   return NextResponse.json({
     orderNumber: (data as any).order_number ?? (data as any).orderNumber ?? "",
     items,
+    customerName: (data as any).customer_name ?? (data as any).customerName ?? null,
 
     // dollars
     subtotal: subtotal_cents / 100,

@@ -46,7 +46,9 @@ export async function POST(req: Request) {
         order_type: "takeout", // dine_in, takeout, phone
         status: "draft",
         payment_status: "unpaid", // keep draft until payment succeeds
-
+        customer_name: body.customerName ?? body.customer_name ?? null,
+        customer_phone: body.customerPhone ?? body.customer_phone ?? null,
+        sms_opt_in: body.smsOptIn ?? body.sms_opt_in ?? false, // optional
         // ✅ write BOTH numeric + cents (your schema has both)
         subtotal,
         tax,
