@@ -4,7 +4,7 @@
 
   --card: #fafafa;
   --border: #e5e7eb;
-  --muted: #333;
+  --muted: #444;  /* or #555 */
 
   --btn: #111;
   --btnText: #fff;
@@ -17,20 +17,12 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0b0b0b;
+    --card: #161616;
+    --border: rgba(255,255,255,0.14);
 
-    --card: #141414;
-    --border: #2a2a2a;
-    --muted: rgba(237,237,237,0.82);
-
-    --btn: #ffffff;
-    --btnText: #0a0a0a;
-    --btnAltBg: rgba(255,255,255,0.06);
-    --btnAltText: #ffffff;
-
-    --heroOverlayFrom: rgba(0,0,0,0.55);
-    --heroOverlayTo: rgba(0,0,0,0.20);
+    --foreground: #f2f2f2;   /* main text */
+    --muted: #c9c9c9;        /* secondary text (NOT too dark) */
   }
 }
 

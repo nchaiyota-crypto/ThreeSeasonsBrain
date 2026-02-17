@@ -295,10 +295,13 @@ export default function CheckoutForm() {
                 style={{
                   height: 44,
                   borderRadius: 12,
-                  border: nameError ? "1px solid #e11d48" : "1px solid #e5e5e5",
                   padding: "0 12px",
                   outline: "none",
-                  background: "#fff",
+                  background: "var(--card)",
+                  color: "var(--foreground)",
+                  border: nameError
+                    ? "1px solid #e11d48"
+                    : "1px solid var(--border)",
                   fontWeight: 700,
                 }}
               />
@@ -317,10 +320,11 @@ export default function CheckoutForm() {
                 style={{
                   height: 44,
                   borderRadius: 12,
-                  border: "1px solid #e5e5e5",
                   padding: "0 12px",
                   outline: "none",
-                  background: "#fff",
+                  border: "1px solid var(--border)",
+                  background: "var(--btnAltBg)",
+                  color: "var(--btnAltText)",
                   fontWeight: 700,
                 }}
               />
@@ -359,8 +363,18 @@ export default function CheckoutForm() {
                     flex: 1,
                     height: 40,
                     borderRadius: 12,
-                    border: tipPreset === p && tipCustom === "" ? "2px solid #000" : "1px solid #e5e5e5",
-                    background: "#fff",
+                    border:
+                      tipPreset === p && tipCustom === ""
+                        ? "2px solid var(--foreground)"
+                        : "1px solid var(--border)",
+                    background:
+                      tipPreset === p && tipCustom === ""
+                        ? "var(--foreground)"
+                        : "var(--card)",
+                    color:
+                      tipPreset === p && tipCustom === ""
+                        ? "var(--background)"
+                        : "var(--foreground)",
                     fontWeight: 900,
                     cursor: "pointer",
                   }}
@@ -383,10 +397,11 @@ export default function CheckoutForm() {
                 style={{
                   height: 44,
                   borderRadius: 12,
-                  border: "1px solid #e5e5e5",
                   padding: "0 12px",
                   outline: "none",
-                  background: "#fff",
+                  border: "1px solid var(--border)",
+                  background: "var(--btnAltBg)",
+                  color: "var(--btnAltText)",
                   fontWeight: 700,
                 }}
               />
