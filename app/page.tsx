@@ -55,13 +55,13 @@ export default function HomePage() {
     };
   }, []);
   return (
-    <div style={{ minHeight: "100vh", background: "#fff" }}>
+    <div style={{ minHeight: "100vh", background: "var(--background)", color: "var(--foreground)" }}>
       <Navbar />
       {paused && (
         <div
           style={{
-            background: "#111",
-            color: "#fff",
+          background: "var(--btn)",
+          color: "var(--btnText)",
             padding: "14px 18px",
             textAlign: "center",
             fontWeight: 900,
@@ -77,7 +77,7 @@ export default function HomePage() {
           width: "100%",
           height: isMobile ? "64vh" : "72vh",
           minHeight: isMobile ? 420 : 520,
-          background: "#111",
+          background: "var(--background)",
           overflow: "hidden",
         }}
       >
@@ -103,7 +103,8 @@ export default function HomePage() {
           style={{
             position: "absolute",
             inset: 0,
-            background: "linear-gradient(90deg, rgba(0,0,0,0.75), rgba(0,0,0,0.25))",
+            background:
+              "linear-gradient(90deg, var(--heroOverlayFrom), var(--heroOverlayTo))",
           }}
         />
 
@@ -113,7 +114,7 @@ export default function HomePage() {
             maxWidth: 1200,
             margin: "0 auto",
             padding: isMobile ? "56px 16px" : "80px 18px",
-            color: "#fff",
+            color: "var(--btnText)",
           }}
         >
           <div style={{ maxWidth: 650 }}>
@@ -187,8 +188,8 @@ export default function HomePage() {
                   height: 44,
                   padding: "0 18px",
                   borderRadius: 12,
-                  background: "#fff",
-                  color: "#111",
+                  background: "var(--btnAltBg)",
+                  color: "var(--btnAltText)",
                   display: "inline-flex",
                   alignItems: "center",
                   fontWeight: 950,
@@ -207,7 +208,7 @@ export default function HomePage() {
                   padding: "0 18px",
                   borderRadius: 12,
                   border: "1px solid rgba(255,255,255,0.35)",
-                  color: "#fff",
+                  color: "var(--btnText)",
                   display: "inline-flex",
                   alignItems: "center",
                   fontWeight: 900,
@@ -234,7 +235,7 @@ export default function HomePage() {
             >
             <div>
               <div style={{ fontSize: isMobile ? 30 : 44, fontWeight: 950, marginBottom: 10 }}>Welcome to 3 Seasons Thai Bistro</div>
-              <p style={{ fontSize: 16, lineHeight: 1.7, color: "#333", margin: 0 }}>
+              <p style={{ fontSize: 16, lineHeight: 1.7, color: "var(--muted)", margin: 0 }}>
                 Located in the heart of Oakland, we serve flavorful Thai dishes that are fresh,
                 comforting, and easy to enjoy. Whether you’re craving curry, noodles, or house specials —
                 we’ve got you covered.
@@ -247,13 +248,13 @@ export default function HomePage() {
                     height: 42,
                     padding: "0 14px",
                     borderRadius: 12,
-                    border: "1px solid #ddd",
-                    background: "#fff",
+                    border: "1px solid var(--border)",
+                    background: "var(--btnAltBg)",
                     display: "inline-flex",
                     alignItems: "center",
                     fontWeight: 900,
                     textDecoration: "none",
-                    color: "#111",
+                    color: "var(--btnAltText)",
                   }}
                 >
                   View Menu
@@ -265,13 +266,13 @@ export default function HomePage() {
                     height: 42,
                     padding: "0 14px",
                     borderRadius: 12,
-                    border: "1px solid #ddd",
-                    background: "#fff",
+                    border: "1px solid var(--border)",
+                    background: "var(--btnAltBg)",
                     display: "inline-flex",
                     alignItems: "center",
                     fontWeight: 900,
                     textDecoration: "none",
-                    color: "#111",
+                    color: "var(--btnAltText)",
                   }}
                 >
                   Catering
@@ -282,22 +283,22 @@ export default function HomePage() {
             {/* Right side "card" like Owner */}
             <div
               style={{
-                border: "1px solid #eee",
+                border: "1px solid var(--border)",
                 borderRadius: 16,
                 padding: 18,
-                background: "#fafafa",
+                background: "var(--card)",
+                color: "var(--foreground)",
               }}
             >
               <div style={{ fontWeight: 950, marginBottom: 10 }}>Hours</div>
-              <div style={{ color: "#333", lineHeight: 1.7 }}>
+              <div style={{ color: "var(--muted)", lineHeight: 1.7 }}>
                 <div>Mon: Close </div>
-                <div>Tue: 4:00 PM – 9:00 PM</div>
-                <div>Wed–Thu: 4:00 PM – 9:00 PM</div>
+                <div>Tue–Thu: 4:00 PM – 9:00 PM</div>
                 <div>Fri–Sun: 11:00 AM – 9:00 PM</div>
               </div>
 
               <div style={{ marginTop: 14, fontWeight: 950, marginBottom: 8 }}>Location</div>
-              <div style={{ color: "#333", lineHeight: 1.7 }}>
+              <div style={{ color: "var(--muted)", lineHeight: 1.7 }}>
                 1506 Leimert Blvd
                 <br />
                 Oakland, CA 94602
@@ -311,8 +312,8 @@ export default function HomePage() {
                     width: "100%",
                     height: 44,
                     borderRadius: 12,
-                    background: "#111",
-                    color: "#fff",
+                    background: "var(--btn)",
+                    color: "var(--btnText)",
                     display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -331,7 +332,7 @@ export default function HomePage() {
       </section>
 
       {/* SIMPLE FOOTER */}
-      <footer style={{ borderTop: "1px solid #eee", padding: "26px 18px", background: "#fff" }}>
+      <footer style={{ borderTop: "1px solid var(--border)", padding: "26px 18px", background: "var(--background)" }}>
         <div
           style={{
             maxWidth: 1200,
@@ -340,21 +341,21 @@ export default function HomePage() {
             justifyContent: "space-between",
             gap: 16,
             flexWrap: "wrap",
-            color: "#444",
+            color: "var(--muted)",
           }}
         >
           <div style={{ fontWeight: 900 }}>© {new Date().getFullYear()} Union Thais LLC</div>
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
-            <a href="#menu" style={{ color: "#444", textDecoration: "none" }}>
+            <a href="#menu" style={{ color: "var(--muted)", textDecoration: "none" }}>
               Menu
             </a>
-            <a href="#catering" style={{ color: "#444", textDecoration: "none" }}>
+            <a href="#catering" style={{ color: "var(--muted)", textDecoration: "none" }}>
               Catering
             </a>
-            <a href="#story" style={{ color: "#444", textDecoration: "none" }}>
+            <a href="#story" style={{ color: "var(--muted)", textDecoration: "none" }}>
               Our Story
             </a>
-            <a href="#giftcards" style={{ color: "#444", textDecoration: "none" }}>
+            <a href="#giftcards" style={{ color: "var(--muted)", textDecoration: "none" }}>
               Gift Cards
             </a>
           </div>
