@@ -242,8 +242,11 @@ export default function HomePage() {
               </p>
 
               <div style={{ display: "flex", gap: 10, marginTop: 18, flexWrap: "wrap" }}>
-                <a
-                  href="#menu"
+                <Link
+                  href={ws?.paused ? "#" : "/menu"}
+                  onClick={(e) => {
+                    if (ws?.paused) e.preventDefault();
+                  }}
                   style={{
                     height: 42,
                     padding: "0 14px",
@@ -255,10 +258,12 @@ export default function HomePage() {
                     fontWeight: 900,
                     textDecoration: "none",
                     color: "var(--btnAltText)",
+                    opacity: ws?.paused ? 0.6 : 1,
+                    pointerEvents: ws?.paused ? "none" : "auto",
                   }}
                 >
                   View Menu
-                </a>
+                </Link>
 
                 <a
                   href="#catering"
@@ -346,9 +351,9 @@ export default function HomePage() {
         >
           <div style={{ fontWeight: 900 }}>© {new Date().getFullYear()} Union Thais LLC</div>
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
-            <a href="#menu" style={{ color: "var(--muted)", textDecoration: "none" }}>
+            <Link href="/menu" style={{ color: "var(--muted)", textDecoration: "none" }}>
               Menu
-            </a>
+            </Link>
             <a href="#catering" style={{ color: "var(--muted)", textDecoration: "none" }}>
               Catering
             </a>

@@ -35,9 +35,9 @@ export default function Navbar() {
 
         {/* Nav */}
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <a href="#menu" style={{ textDecoration: "none", color: "#111", fontWeight: 700 }}>
+          <Link href="/menu" style={{ textDecoration: "none", color: "#111", fontWeight: 700 }}>
             Menu
-          </a>
+          </Link>
           <a href="#catering" style={{ textDecoration: "none", color: "#111", fontWeight: 700 }}>
             Catering
           </a>
@@ -54,8 +54,9 @@ export default function Navbar() {
               height: 36,
               padding: "0 12px",
               borderRadius: 10,
-              border: "1px solid #ddd",
-              background: "#fff",
+              border: "1px solid var(--border)",
+              background: "var(--card)",
+              color: "var(--foreground)",
               fontWeight: 800,
               cursor: "pointer",
             }}
@@ -72,8 +73,8 @@ export default function Navbar() {
               alignItems: "center",
               padding: "0 14px",
               borderRadius: 10,
-              background: "#111",
-              color: "#fff",
+              background: "var(--btn)",
+              color: "var(--btnText)",
               fontWeight: 900,
               textDecoration: "none",
             }}
