@@ -11,6 +11,8 @@ import {
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 type Order = {
+  pickupScheduledAt?: string;
+  pickup_scheduled_at?: string;
   orderId?: string;
   customerName?: string;
   orderNumber: string;
@@ -286,10 +288,32 @@ export default function CheckoutSuccess() {
           total_cents: mergedTotalCents,
           tipCents: mergedTipCents,
           totalWithTip: mergedTotalWithTip,
-          pickupMode: (supa?.pickupMode ?? last.pickupMode ?? "asap") as any,
-          pickupTimeISO: supa?.pickupTimeISO ?? last.pickupTimeISO,
-          estimateMin: supa?.estimateMin ?? last.estimateMin,
+          pickupMode:
+            (supa?.pickup_mode ??
+            supa?.pickupMode ??
+            last.pickupMode ??
+            "asap") as any,
+
+          pickupTimeISO:
+            supa?.pickup_scheduled_at ??
+            supa?.pickupScheduledAt ??
+            last.pickupTimeISO,
+
+          estimateMin:
+            supa?.estimate_min ??
+            supa?.estimateMin ??
+            last.estimateMin,
+          pickupScheduledAt: supa?.pickupScheduledAt ?? (last as any).pickupScheduledAt,
+          pickup_scheduled_at: supa?.pickup_scheduled_at ?? (last as any).pickup_scheduled_at,
         };
+
+        // ✅ log goes here (AFTER the object)
+        console.log("✅ finalOrder pickup fields:", {
+          pickupMode: finalOrder.pickupMode,
+          pickupTimeISO: finalOrder.pickupTimeISO,
+          pickupScheduledAt: (finalOrder as any).pickupScheduledAt,
+          pickup_scheduled_at: (finalOrder as any).pickup_scheduled_at,
+        });
 
         // 4) Lock paid order + clear cart/order keys
         writeLastPaidOrder(finalOrder);
@@ -315,9 +339,22 @@ export default function CheckoutSuccess() {
 
   const pickupText = useMemo(() => {
     if (!order) return "";
-    if (order.pickupMode === "asap") return `ASAP (~${order.estimateMin ?? 35} min)`;
-    if (order.pickupTimeISO) return `Scheduled: ${new Date(order.pickupTimeISO).toLocaleString()}`;
-    return "Scheduled";
+
+    const scheduledISO =
+      (order as any).pickupScheduledAt ??
+      (order as any).pickup_scheduled_at ??
+      order.pickupTimeISO;
+
+    // ✅ if we have a scheduled time, show it first
+    if (scheduledISO) {
+      const d = new Date(scheduledISO);
+      if (!Number.isNaN(d.getTime())) {
+        return `Scheduled: ${d.toLocaleString()}`;
+      }
+    }
+
+    // fallback to ASAP
+    return `ASAP (~${(order as any).waitMinutes ?? order.estimateMin ?? 35} min)`;
   }, [order]);
 
   if (status === "loading") {

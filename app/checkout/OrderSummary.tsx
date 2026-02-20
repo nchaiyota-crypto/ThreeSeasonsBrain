@@ -7,6 +7,13 @@ type LastOrder = {
   pickupMode?: "asap" | "schedule";
   estimateMin?: number;
   pickupTimeISO?: string;
+
+  // ✅ NEW
+  pickupScheduledAt?: string;
+  pickup_scheduled_at?: string;
+  estimatedReadyAt?: string;
+  estimated_ready_at?: string;
+
   subtotal?: number;
   tax?: number;
   total?: number;
@@ -16,7 +23,7 @@ type LastOrder = {
     name: string;
     optionsSummary?: string;
     specialInstructions?: string;
-    note?: string; // optional fallback
+    note?: string;
   }>;
 };
 
@@ -37,10 +44,25 @@ export default function OrderSummary() {
 
   if (!order) return null;
 
-  const pickupLabel =
-    order.pickupMode === "schedule"
-      ? `Scheduled (${order.pickupTimeISO ? new Date(order.pickupTimeISO).toLocaleString() : "Selected time"})`
-      : `ASAP (~${order.estimateMin ?? 35} min)`;
+    const scheduledISO =
+    order.pickupScheduledAt ??
+    order.pickup_scheduled_at ??
+    order.pickupTimeISO; // fallback
+
+    const pickupLabel =
+      order.pickupMode === "schedule"
+        ? `Scheduled (${
+            scheduledISO
+              ? new Date(scheduledISO).toLocaleString([], {
+                  weekday: "short",
+                  month: "short",
+                  day: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                })
+              : "Selected time"
+          })`
+        : `ASAP (~${order.estimateMin ?? 35} min)`;
 
   return (
     <div
@@ -56,6 +78,9 @@ export default function OrderSummary() {
         <div style={{ fontWeight: 900 }}>
           Order Summary
         </div>
+      </div>
+      <div style={{ marginTop: 6, fontSize: 13, opacity: 0.8 }}>
+        Pickup: {pickupLabel}
       </div>
       <div style={{ marginTop: 12, borderTop: "1px solid #eaeaea", paddingTop: 10, display: "grid", gap: 8 }}>
         {(order.items ?? []).map((it: any, idx: number) => {
