@@ -55,9 +55,9 @@ export default function SuccessPickupClient() {
       style={{
         marginTop: 12,
         padding: 14,
-        border: "1px solid #eee",
+        borderTop: "1px solid var(--border)",
+        background: "var(--background)",
         borderRadius: 12,
-        background: "#fff",
       }}
     >
       <div style={{ fontWeight: 900, marginBottom: 6 }}>Pickup</div>

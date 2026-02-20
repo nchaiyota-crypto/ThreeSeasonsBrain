@@ -21,7 +21,7 @@ export default function CheckoutPage() {
         </div>
 
         {/* Card */}
-        <div style={{ background: "#fff", border: "1px solid #e8e8e8", borderRadius: 16, padding: 18, boxShadow: "0 6px 18px rgba(0,0,0,0.06)" }}>
+        <div style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--foreground)", borderRadius: 16, padding: 18, boxShadow: "0 6px 18px rgba(0,0,0,0.06)" }}>
           <CheckoutClient />
         </div>
 
@@ -36,9 +36,9 @@ export default function CheckoutPage() {
 const navLinkStyle: React.CSSProperties = {
   fontSize: 14,
   textDecoration: "none",
-  color: "#111",
   padding: "6px 10px",
   borderRadius: 10,
-  background: "#fff",
-  border: "1px solid #e5e5e5",
+  color: "var(--foreground)",
+  background: "var(--card)",
+  border: "1px solid var(--border)",
 };

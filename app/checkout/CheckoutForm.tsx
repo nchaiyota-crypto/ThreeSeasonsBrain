@@ -23,16 +23,35 @@ export default function CheckoutForm() {
   const [tax, setTax] = useState<number>(0);
   const [serviceFee, setServiceFee] = useState<number>(0);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
 
-    const raw = localStorage.getItem("last_order");
-    if (!raw) return;
+useEffect(() => {
+  if (typeof window === "undefined") return;
 
-    try {
-  const o = JSON.parse(raw);
-      
-  useEffect(() => {
+  const raw = localStorage.getItem("last_order");
+  if (!raw) return;
+
+  try {
+    const o = JSON.parse(raw);
+
+    const sub = Number(o?.subtotal ?? 0);
+    const tx = Number(o?.tax ?? 0);
+    const fee = Number(o?.serviceFee ?? o?.service_fee ?? o?.onlineServiceFee ?? 0);
+
+    setSubtotal(sub);
+    setTax(tx);
+    setServiceFee(fee);
+    setBaseTotal(Number((sub + tx + fee).toFixed(2)));
+
+    if (o?.customerName) setCustomerName(o.customerName);
+    if (o?.customerPhone) setCustomerPhone(o.customerPhone);
+    if (typeof o?.smsOptIn === "boolean") setSmsOptIn(o.smsOptIn);
+
+    console.log("✅ loaded last_order:", { sub, tx, fee });
+  } catch (e) {
+    console.log("❌ last_order parse failed", e);
+  }
+}, []);
+useEffect(() => {
   const t = setTimeout(async () => {
     try {
       const raw = localStorage.getItem("last_order");
@@ -42,7 +61,7 @@ export default function CheckoutForm() {
 
       const phoneE164 = normalizeUSPhone(customerPhone);
 
-      // ✅ update localStorage
+      // update localStorage
       localStorage.setItem(
         "last_order",
         JSON.stringify({
@@ -53,7 +72,7 @@ export default function CheckoutForm() {
         })
       );
 
-      // ✅ save to DB only if name exists
+      // save to DB only if name exists
       if (customerName.trim()) {
         await fetch("/api/orders/customer", {
           method: "POST",
@@ -74,32 +93,17 @@ export default function CheckoutForm() {
   return () => clearTimeout(t);
 }, [customerName, customerPhone, smsOptIn]);
 
-  if (o?.customerName) setCustomerName(o.customerName);
-  if (o?.customerPhone) setCustomerPhone(o.customerPhone);
-  if (typeof o?.smsOptIn === "boolean") setSmsOptIn(o.smsOptIn);
-
-  // ✅ pull amounts from last_order
-  const sub = Number(o?.subtotal ?? 0);
-  const tx = Number(o?.tax ?? 0);
-  const fee = Number(o?.serviceFee ?? o?.service_fee ?? o?.onlineServiceFee ?? 0);
-  const base = +(sub + tx + fee).toFixed(2);
-
-  setSubtotal(sub);
-  setTax(tx);
-  setServiceFee(fee);
-  setBaseTotal(base);
-  } catch {
-    // ignore
-  }
-  }, []);
-
     // ✅ Read base total from last_order (what Stripe is currently charging)
+  const custom = tipCustom.trim() === "" ? 0 : Number.parseFloat(tipCustom);
+  const safeCustom = Number.isFinite(custom) ? Math.max(0, custom) : 0;
+
+  console.log("DEBUG totals:", { subtotal, tax, serviceFee, baseTotal, tipPreset, tipCustom });
   const tipAmount =
-    tipCustom.trim() !== ""
-      ? Math.max(0, Number(tipCustom))
-        : tipPreset > 0
-          ? (subtotal * tipPreset) / 100
-          : 0;
+    safeCustom > 0
+      ? safeCustom
+      : tipPreset > 0
+        ? (baseTotal * tipPreset) / 100
+        : 0;
 
   const finalTotal = baseTotal + tipAmount;
   const tipCents = Math.round(tipAmount * 100);
@@ -431,8 +435,8 @@ export default function CheckoutForm() {
                 height: 48,
                 borderRadius: 14,
                 border: "none",
-                background: "#000",
-                color: "#fff",
+                background: "var(--btn)",
+                color: "var(--btnText)",
                 fontWeight: 900,
                 cursor: "pointer",
                 opacity: isPaying ? 0.6 : 1,

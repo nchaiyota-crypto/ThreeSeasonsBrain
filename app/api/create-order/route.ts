@@ -39,6 +39,57 @@ export async function POST(req: Request) {
     const totalCents = subtotalCents + taxCents + serviceFeeCents;
     const total = totalCents / 100;
 
+    // ✅ visible schedule showing on KDS
+    // ✅ normalize + accept multiple key names
+    const pickupModeRaw = body.pickupMode ?? body.pickup_mode ?? "asap";
+    const pickupMode = String(pickupModeRaw).toLowerCase(); // "asap" | "schedule"
+
+    const pickupScheduledAtRaw =
+      body.pickupScheduledAt ??
+      body.pickup_scheduled_at ??
+      body.pickupAt ??
+      body.pickup_at ??
+      null;
+
+    const now = new Date();
+    const waitMinutes = Number(body.waitMinutes ?? body.etaMinutes ?? 35);
+    const waitMs = (Number.isFinite(waitMinutes) ? waitMinutes : 35) * 60_000;
+
+    // ✅ compute pickup_scheduled_at correctly
+    let pickupScheduledAtValue: string;
+
+    if (pickupMode === "schedule") {
+      if (!pickupScheduledAtRaw) {
+        return NextResponse.json(
+          { error: "Missing pickupScheduledAt for scheduled pickup" },
+          { status: 400 }
+        );
+      }
+      const d = new Date(pickupScheduledAtRaw);
+      if (Number.isNaN(d.getTime())) {
+        return NextResponse.json({ error: "Invalid pickupScheduledAt" }, { status: 400 });
+      }
+      pickupScheduledAtValue = d.toISOString();
+    } else {
+      pickupScheduledAtValue = now.toISOString(); // ASAP => store now
+    }
+
+    // ✅ estimated_ready_at
+    let estimatedReadyAt: Date;
+    if (pickupMode === "schedule") {
+      estimatedReadyAt = new Date(new Date(pickupScheduledAtValue).getTime() + waitMs);
+    } else {
+      estimatedReadyAt = new Date(now.getTime() + waitMs);
+    }
+
+    console.log("✅ pickup computed:", {
+      pickupModeRaw,
+      pickupMode,
+      pickupScheduledAtRaw,
+      pickupScheduledAtValue,
+      estimatedReadyAt: estimatedReadyAt.toISOString(),
+    });
+
     const { data, error } = await supabase
       .from("orders")
       .insert({
@@ -49,6 +100,8 @@ export async function POST(req: Request) {
         customer_name: body.customerName ?? body.customer_name ?? null,
         customer_phone: body.customerPhone ?? body.customer_phone ?? null,
         sms_opt_in: body.smsOptIn ?? body.sms_opt_in ?? false, // optional
+        pickup_scheduled_at: pickupScheduledAtValue,
+        estimated_ready_at: estimatedReadyAt.toISOString(),
         // ✅ write BOTH numeric + cents (your schema has both)
         subtotal,
         tax,

@@ -70,8 +70,9 @@ export default function SuccessSummaryClient() {
           marginTop: 16,
           padding: 16,
           borderRadius: 16,
-          border: "1px solid #e8e8e8",
-          background: "#fff",
+          background: "var(--card)",
+          border: "1px solid var(--border)",
+          color: "var(--foreground)",
         }}
       >
         <div style={{ fontWeight: 900, marginBottom: 6 }}>Pickup</div>

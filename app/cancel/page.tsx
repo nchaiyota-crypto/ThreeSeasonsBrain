@@ -7,11 +7,11 @@ export default function CancelPage() {
       <p style={{ opacity: 0.75 }}>You can go back and try again.</p>
 
       <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-        <Link href="/menu" style={{ padding: "10px 14px", background: "#000", color: "#fff", borderRadius: 10, fontWeight: 900 }}>
+        <Link href="/menu" style={{ padding: "10px 14px", background: "var(--btn)", color: "var(--btnText)", borderRadius: 10, fontWeight: 900 }}>
           Back to menu
         </Link>
 
-        <Link href="/" style={{ padding: "10px 14px", border: "1px solid #ddd", borderRadius: 10, fontWeight: 900 }}>
+        <Link href="/" style={{ padding: "10px 14px", border: "1px solid var(--border)", borderRadius: 10, fontWeight: 900 }}>
           Home
         </Link>
       </div>

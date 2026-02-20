@@ -20,7 +20,7 @@ type CartLine = {
 const TAX_RATE = 0.1075; // Oakland 10.75%
 const SERVICE_FEE_RATE = 0.035; // must match your backend (example: 3.25 -> 0.42)
 const CART_KEY = "three_seasons_cart_v1";
-const CART_TTL_MS = 1 * 60 * 60 * 1000; // 1 hour
+const CART_TTL_MS = 60 * 60 * 1000; // 1 hours
 const PICKUP_KEY = "three_seasons_pickup_v1";
 
 const SLOT_INTERVAL_MIN = 15;
@@ -256,6 +256,15 @@ function buildSteps(item: MenuItem): Step[] {
 
   steps.push({ kind: "qty" });
   return steps;
+}
+
+//fuction pickupSceduleAt
+function localValueToISOString(localValue: string) {
+  const [datePart, timePart] = localValue.split("T");
+  const [y, m, d] = datePart.split("-").map(Number);
+  const [hh, mm] = timePart.split(":").map(Number);
+  const dt = new Date(y, (m ?? 1) - 1, d ?? 1, hh ?? 0, mm ?? 0, 0, 0);
+  return dt.toISOString();
 }
 
 /** ---------------------------
@@ -788,25 +797,32 @@ export default function MenuPage() {
   function saveLastOrder() {
     const orderNumber = "TS-" + Date.now().toString().slice(-6);
 
+    const pickupScheduledAt =
+      pickupMode === "schedule" && pickupTimeISO
+        ? localValueToISOString(pickupTimeISO)
+        : null;
+
     const payload = {
       orderNumber,
-
-      // cart lines
       items: cart,
 
-      // totals
       subtotal,
       tax,
       serviceFee,
       total,
 
-      // pickup details
       pickupMode,
+
+      // ✅ THIS is what backend needs
+      pickupScheduledAt,
+
+      // optional (keep if you want)
       pickupDate,
       pickupTimeISO,
-      estimateMin,
 
-      // helpful metadata
+      // backend reads waitMinutes or etaMinutes
+      waitMinutes: estimateMin,
+
       createdAt: new Date().toISOString(),
     };
 
@@ -861,8 +877,9 @@ export default function MenuPage() {
             height: 40,
             padding: "0 14px",
             borderRadius: 12,
-            border: "1px solid #e1e1e1",
-            background: "#fff",
+            border: "1px solid var(--border)",
+            background: "var(--card)",
+            color: "var(--foreground)",
             fontWeight: 900,
             cursor: "pointer",
           }}
@@ -886,9 +903,10 @@ export default function MenuPage() {
         {!isMobile && (
           <div
             style={{
-              background: "#fff",
               borderRadius: 16,
-              border: "1px solid #e8e8e8",
+              background: "var(--card)",
+              border: "1px solid var(--border)",
+              color: "var(--foreground)",
               padding: 14,
               paddingBottom: 90,
               height: "100%",
@@ -925,8 +943,13 @@ export default function MenuPage() {
                       padding: "10px 12px",
                       borderRadius: 12,
                       border: "1px solid #e1e1e1",
-                      background: isActive ? "#000" : "#f7f7f7",
-                      color: isActive ? "#fff" : "#111",
+                      background: isActive
+                        ? "var(--btn)"
+                        : "var(--card)",
+
+                      color: isActive
+                        ? "var(--btnText)"
+                        : "var(--foreground)",
                       fontWeight: 700,
                       cursor: "pointer",
                     }}
@@ -942,9 +965,10 @@ export default function MenuPage() {
         {/* CENTER */}
         <div
           style={{
-            background: "#fff",
             borderRadius: 16,
-            border: "1px solid #e8e8e8",
+            background: "var(--card)",
+            border: "1px solid var(--border)",
+            color: "var(--foreground)",
             padding: 14,
             paddingBottom: 90,
             height: "100%",
@@ -975,8 +999,9 @@ export default function MenuPage() {
                     height: 40,
                     padding: "0 14px",
                     borderRadius: 12,
-                    border: "1px solid #e1e1e1",
-                    background: "#fff",
+                    border: "1px solid var(--border)",
+                    background: "var(--card)",
+                    color: "var(--foreground)",
                     fontWeight: 900,
                     cursor: "pointer",
                     whiteSpace: "nowrap",
@@ -1042,8 +1067,8 @@ export default function MenuPage() {
                     padding: "0 14px",
                     borderRadius: 12,
                     border: "none",
-                    background: "#000",
-                    color: "#fff",
+                    background: "var(--btn)",
+                    color: "var(--btnText)",
                     fontWeight: 900,
                     cursor: "pointer",
                     whiteSpace: "nowrap",
@@ -1060,9 +1085,10 @@ export default function MenuPage() {
         {!isMobile && (
           <div
             style={{
-              background: "#fff",
               borderRadius: 16,
-              border: "1px solid #e8e8e8",
+              background: "var(--card)",
+              border: "1px solid var(--border)",
+              color: "var(--foreground)",
               height: "100%",
               display: "flex",
               flexDirection: "column",
@@ -1086,8 +1112,8 @@ export default function MenuPage() {
                     minWidth: 26,
                     height: 26,
                     borderRadius: 999,
-                    background: "#000",
-                    color: "#fff",
+                    background: "var(--btn)",
+                    color: "var(--btnText)",
                     display: "grid",
                     placeItems: "center",
                     fontWeight: 900,
@@ -1107,12 +1133,13 @@ export default function MenuPage() {
                   {cart.map((line) => (
                     <div
                       key={line.key}
-                      style={{
-                        border: "1px solid #eee",
-                        borderRadius: 14,
-                        padding: 10,
-                        background: "#fff",
-                      }}
+                    style={{
+                      background: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 14,
+                      padding: 10,
+                      color: "var(--foreground)",
+                    }}
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
                         <div style={{ fontWeight: 900 }}>{line.name}</div>
@@ -1159,8 +1186,9 @@ export default function MenuPage() {
                               width: 34,
                               height: 34,
                               borderRadius: 10,
-                              border: "1px solid #ddd",
-                              background: "#fff",
+                              border: "1px solid var(--border)",
+                              background: "var(--card)",
+                              color: "var(--foreground)",
                               cursor: "pointer",
                               fontWeight: 900,
                             }}
@@ -1177,8 +1205,9 @@ export default function MenuPage() {
                               width: 34,
                               height: 34,
                               borderRadius: 10,
-                              border: "1px solid #ddd",
-                              background: "#fff",
+                              border: "1px solid var(--border)",
+                              background: "var(--card)",
+                              color: "var(--foreground)",
                               cursor: "pointer",
                               fontWeight: 900,
                             }}
@@ -1228,8 +1257,15 @@ export default function MenuPage() {
                       height: 40,
                       borderRadius: 12,
                       border: "1px solid #e1e1e1",
-                      background: pickupMode === "asap" ? "#000" : "#fff",
-                      color: pickupMode === "asap" ? "#fff" : "#111",
+                      background:
+                        pickupMode === "schedule"
+                          ? "var(--btn)"
+                          : "var(--card)",
+
+                      color:
+                        pickupMode === "schedule"
+                          ? "var(--btnText)"
+                          : "var(--foreground)",
                       fontWeight: 900,
                       cursor: "pointer",
                       opacity: isStoreClosedNow || orderingPaused ? 0.5 : 1,
@@ -1250,8 +1286,15 @@ export default function MenuPage() {
                       height: 40,
                       borderRadius: 12,
                       border: "1px solid #e1e1e1",
-                      background: pickupMode === "schedule" ? "#000" : "#fff",
-                      color: pickupMode === "schedule" ? "#fff" : "#111",
+                      background:
+                        pickupMode === "schedule"
+                          ? "var(--btn)"
+                          : "var(--card)",
+
+                      color:
+                        pickupMode === "schedule"
+                          ? "var(--btnText)"
+                          : "var(--foreground)",
                       fontWeight: 900,
                       cursor: "pointer",
                       opacity: orderingPaused ? 0.5 : 1,
@@ -1286,11 +1329,13 @@ export default function MenuPage() {
                         width: "100%",
                         height: 42,
                         borderRadius: 12,
-                        border: "1px solid #e1e1e1",
+                        border: "1px solid var(--border)",
+                        background: "var(--card)",
+                        color: "var(--foreground)",
                         padding: "0 10px",
                         outline: "none",
                         fontWeight: 700,
-                        background: "#fff",
+                        
                       }}
                     />
 
@@ -1303,11 +1348,13 @@ export default function MenuPage() {
                         width: "100%",
                         height: 42,
                         borderRadius: 12,
-                        border: "1px solid #e1e1e1",
+                        border: "1px solid var(--border)",
+                        background: "var(--card)",
+                        color: "var(--foreground)",
                         padding: "0 10px",
                         outline: "none",
                         fontWeight: 700,
-                        background: "#fff",
+                        
                       }}
                     >
                       {timeSlots.length === 0 ? (
@@ -1341,6 +1388,7 @@ export default function MenuPage() {
                   }
                   const payload = JSON.parse(raw);
 
+                  console.log("🚀 create-order payload:", payload);
                   const res = await fetch("/api/create-order", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -1372,8 +1420,8 @@ export default function MenuPage() {
                   height: 48,
                   borderRadius: 14,
                   border: "none",
-                  background: "#000",
-                  color: "#fff",
+                  background: "var(--btn)",
+                  color: "var(--btnText)",
                   fontWeight: 900,
                   cursor: canCheckout ? "pointer" : "not-allowed",
                   opacity: canCheckout ? 1 : 0.5,
@@ -1385,7 +1433,7 @@ export default function MenuPage() {
             </div>
 
             {/* Sticky footer */}
-            <div style={{ padding: 14, borderTop: "1px solid #eee", background: "#fff" }}>
+            <div style={{ padding: 14, borderTop: "1px solid var(--border)", background: "var(--background)"}}>
               <div style={{ marginTop: 8, fontSize: 12, opacity: 0.65 }}>
                 {orderingPaused && "Online ordering is temporarily paused."}
                 {pickupMode === "asap" && isStoreClosedNow && "Store is closed right now."}
@@ -1416,10 +1464,11 @@ export default function MenuPage() {
             style={{
               width: "100%",
               maxWidth: 520,
-              background: "#fff",
+              background: "var(--card)",
+              border: "1px solid var(--border)",
+              color: "var(--foreground)",
               borderTopLeftRadius: 18,
               borderTopRightRadius: 18,
-              border: "1px solid rgba(0,0,0,0.08)",
               maxHeight: "70dvh",
               display: "flex",
               flexDirection: "column",
@@ -1458,8 +1507,13 @@ export default function MenuPage() {
                         padding: "12px 12px",
                         borderRadius: 12,
                         border: "1px solid #e1e1e1",
-                        background: isActive ? "#000" : "#f7f7f7",
-                        color: isActive ? "#fff" : "#111",
+                        background: isActive
+                          ? "var(--btn)"
+                          : "var(--card)",
+
+                        color: isActive
+                          ? "var(--btnText)"
+                          : "var(--foreground)",
                         fontWeight: 800,
                         cursor: "pointer",
                       }}
@@ -1498,8 +1552,8 @@ export default function MenuPage() {
               height: 52,
               borderRadius: 16,
               border: "none",
-              background: "#000",
-              color: "#fff",
+              background: "var(--btn)",
+              color: "var(--btnText)",
               fontWeight: 900,
               display: "flex",
               alignItems: "center",
@@ -1533,10 +1587,11 @@ export default function MenuPage() {
             style={{
               width: "100%",
               maxWidth: 520,
-              background: "#fff",
+              background: "var(--card)",
+              border: "1px solid var(--border)",
+              color: "var(--foreground)",
               borderTopLeftRadius: 18,
               borderTopRightRadius: 18,
-              border: "1px solid rgba(0,0,0,0.08)",
               maxHeight: "85dvh",
               display: "flex",
               flexDirection: "column",
@@ -1565,7 +1620,7 @@ export default function MenuPage() {
               ) : (
                 <div style={{ display: "grid", gap: 10 }}>
                   {cart.map((line) => (
-                    <div key={line.key} style={{ border: "1px solid #eee", borderRadius: 14, padding: 10, background: "#fff" }}>
+                    <div key={line.key} style={{  borderRadius: 14, padding: 10, borderTop: "1px solid var(--border)", background: "var(--background)"}}>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
                         <div style={{ fontWeight: 900 }}>{line.name}</div>
                         <button
@@ -1595,8 +1650,9 @@ export default function MenuPage() {
                               width: 34,
                               height: 34,
                               borderRadius: 10,
-                              border: "1px solid #ddd",
-                              background: "#fff",
+                              border: "1px solid var(--border)",
+                              background: "var(--card)",
+                              color: "var(--foreground)",
                               cursor: "pointer",
                               fontWeight: 900,
                             }}
@@ -1613,8 +1669,9 @@ export default function MenuPage() {
                               width: 34,
                               height: 34,
                               borderRadius: 10,
-                              border: "1px solid #ddd",
-                              background: "#fff",
+                              border: "1px solid var(--border)",
+                              background: "var(--card)",
+                              color: "var(--foreground)",
                               cursor: "pointer",
                               fontWeight: 900,
                             }}
@@ -1651,7 +1708,7 @@ export default function MenuPage() {
             </div>
 
               {/* Sticky sheet footer */}
-            <div style={{ padding: 12, borderTop: "1px solid #eee", background: "#fff" }}>
+            <div style={{ padding: 12, borderTop: "1px solid var(--border)", background: "var(--background)"}}>
               {/* PICKUP UI (MOBILE) */}
               <div style={{ marginBottom: 12 }}>
                 <div style={{ fontWeight: 900, marginBottom: 6 }}>Pickup</div>
@@ -1666,8 +1723,15 @@ export default function MenuPage() {
                       height: 40,
                       borderRadius: 12,
                       border: "1px solid #e1e1e1",
-                      background: pickupMode === "asap" ? "#000" : "#fff",
-                      color: pickupMode === "asap" ? "#fff" : "#111",
+                      background:
+                        pickupMode === "schedule"
+                          ? "var(--btn)"
+                          : "var(--card)",
+
+                      color:
+                        pickupMode === "schedule"
+                          ? "var(--btnText)"
+                          : "var(--foreground)",
                       fontWeight: 900,
                       cursor: "pointer",
                       opacity: isStoreClosedNow || orderingPaused ? 0.5 : 1,
@@ -1692,8 +1756,15 @@ export default function MenuPage() {
                       height: 40,
                       borderRadius: 12,
                       border: "1px solid #e1e1e1",
-                      background: pickupMode === "schedule" ? "#000" : "#fff",
-                      color: pickupMode === "schedule" ? "#fff" : "#111",
+                      background:
+                        pickupMode === "schedule"
+                          ? "var(--btn)"
+                          : "var(--card)",
+
+                      color:
+                        pickupMode === "schedule"
+                          ? "var(--btnText)"
+                          : "var(--foreground)",
                       fontWeight: 900,
                       cursor: "pointer",
                       opacity: orderingPaused ? 0.5 : 1,
@@ -1727,11 +1798,12 @@ export default function MenuPage() {
                         width: "100%",
                         height: 42,
                         borderRadius: 12,
-                        border: "1px solid #e1e1e1",
+                        border: "1px solid var(--border)",
+                        background: "var(--card)",
+                        color: "var(--foreground)",
                         padding: "0 10px",
                         outline: "none",
                         fontWeight: 700,
-                        background: "#fff",
                       }}
                     />
 
@@ -1744,11 +1816,12 @@ export default function MenuPage() {
                         width: "100%",
                         height: 42,
                         borderRadius: 12,
-                        border: "1px solid #e1e1e1",
+                        border: "1px solid var(--border)",
+                        background: "var(--card)",
+                        color: "var(--foreground)",
                         padding: "0 10px",
                         outline: "none",
                         fontWeight: 700,
-                        background: "#fff",
                       }}
                     >
                       {timeSlots.length === 0 ? (
@@ -1784,6 +1857,7 @@ export default function MenuPage() {
 
                   const payload = JSON.parse(raw);
 
+                  console.log("🚀 create-order payload:", payload);
                   const res = await fetch("/api/create-order", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -1816,8 +1890,8 @@ export default function MenuPage() {
                   height: 50,
                   borderRadius: 14,
                   border: "none",
-                  background: "#000",
-                  color: "#fff",
+                  background: "var(--btn)",
+                  color: "var(--btnText)",
                   fontWeight: 900,
                   cursor: canCheckout ? "pointer" : "not-allowed",
                   opacity: canCheckout ? 1 : 0.5,
@@ -1850,9 +1924,10 @@ export default function MenuPage() {
               style={{
                 width: "min(560px, 100%)",
                 borderRadius: 18,
-                background: "#fff",
                 overflow: "hidden",
-                border: "1px solid rgba(0,0,0,0.08)",
+                background: "var(--card)",
+                border: "1px solid var(--border)",
+                color: "var(--foreground)",
               }}
             >
               {/* top image */}
@@ -2018,8 +2093,9 @@ export default function MenuPage() {
                               width: 44,
                               height: 44,
                               borderRadius: 12,
-                              border: "1px solid #ddd",
-                              background: "#fff",
+                              border: "1px solid var(--border)",
+                              background: "var(--card)",
+                              color: "var(--foreground)",
                               cursor: "pointer",
                               fontWeight: 900,
                               fontSize: 18,
@@ -2037,8 +2113,9 @@ export default function MenuPage() {
                               width: 44,
                               height: 44,
                               borderRadius: 12,
-                              border: "1px solid #ddd",
-                              background: "#fff",
+                              border: "1px solid var(--border)",
+                              background: "var(--card)",
+                              color: "var(--foreground)",
                               cursor: "pointer",
                               fontWeight: 900,
                               fontSize: 18,
@@ -2066,8 +2143,9 @@ export default function MenuPage() {
                       height: 44,
                       padding: "0 14px",
                       borderRadius: 12,
-                      border: "1px solid #e5e5e5",
-                      background: "#fff",
+                      border: "1px solid var(--border)",
+                      background: "var(--btnAltBg)",
+                      color: "var(--btnAltText)",
                       fontWeight: 900,
                       cursor: stepIndex === 0 ? "not-allowed" : "pointer",
                       opacity: stepIndex === 0 ? 0.4 : 1,
@@ -2085,8 +2163,8 @@ export default function MenuPage() {
                         height: 44,
                         borderRadius: 12,
                         border: "none",
-                        background: "#000",
-                        color: "#fff",
+                        background: "var(--btn)",
+                        color: "var(--btnText)",
                         fontWeight: 900,
                         cursor: "pointer",
                       }}
@@ -2102,8 +2180,8 @@ export default function MenuPage() {
                         height: 44,
                         borderRadius: 12,
                         border: "none",
-                        background: "#000",
-                        color: "#fff",
+                        background: "var(--btn)",
+                        color: "var(--btnText)",
                         fontWeight: 900,
                         cursor: "pointer",
                       }}
@@ -2119,8 +2197,9 @@ export default function MenuPage() {
                       height: 44,
                       padding: "0 14px",
                       borderRadius: 12,
-                      border: "1px solid #e5e5e5",
-                      background: "#fff",
+                      border: "1px solid var(--border)",
+                      background: "var(--btnAltBg)",
+                      color: "var(--btnAltText)",
                       fontWeight: 900,
                       cursor: "pointer",
                     }}

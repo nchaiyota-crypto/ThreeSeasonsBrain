@@ -1,0 +1,96 @@
+import { NextResponse } from "next/server";
+
+// IMPORTANT: avoid caching in production
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+function dollarsToCents(d: number): number {
+  // robust rounding for floats like 14.95
+  return Math.round((d + Number.EPSILON) * 100);
+}
+
+type ApiMenuChoice = {
+  id: string;
+  name: string;
+  priceDeltaCents: number;
+};
+
+type ApiMenuOptionGroup = {
+  id: string;
+  name: string;
+  required: boolean;
+  min: number;
+  max: number;
+  options: ApiMenuChoice[];
+};
+
+type ApiMenuItem = {
+  id: string;
+  name: string;
+  description?: string;
+  priceCents: number;
+  imageUrl?: string;
+  optionGroups: ApiMenuOptionGroup[];
+};
+
+type ApiMenuCategory = {
+  name: string;
+  items: ApiMenuItem[];
+};
+
+export async function GET() {
+  // Adjust import path to your real menu file:
+  // Example: import { menuItems } from "@/app/menuData";
+  const { menuItems } = await import("@/app/menu/menuData"); // <-- change if needed
+
+  const categoriesMap = new Map<string, ApiMenuItem[]>();
+
+  for (const item of menuItems as any[]) {
+    const optionGroups: ApiMenuOptionGroup[] = (item.options ?? []).map((opt: any) => ({
+      id: String(opt.id),
+      name: String(opt.name),
+      required: Boolean(opt.required),
+      min: typeof opt.minSelect === "number" ? opt.minSelect : (opt.required ? 1 : 0),
+      max: typeof opt.maxSelect === "number" ? opt.maxSelect : 1,
+      options: (opt.choices ?? []).map((c: any) => ({
+        id: String(c.id),
+        name: String(c.name),
+        priceDeltaCents: dollarsToCents(Number(c.priceDelta ?? 0)),
+      })),
+    }));
+
+    const apiItem: ApiMenuItem = {
+      id: String(item.id),
+      name: String(item.name),
+      description: item.description ? String(item.description) : undefined,
+      priceCents: dollarsToCents(Number(item.price ?? 0)),
+      imageUrl: item.imageUrl ? String(item.imageUrl) : undefined,
+      optionGroups,
+    };
+
+    const cat = String(item.category ?? "Other");
+    const arr = categoriesMap.get(cat) ?? [];
+    arr.push(apiItem);
+    categoriesMap.set(cat, arr);
+  }
+
+  // stable order: categories alpha, items alpha (optional)
+  const categories: ApiMenuCategory[] = Array.from(categoriesMap.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([name, items]) => ({
+      name,
+      items: items.sort((a, b) => a.name.localeCompare(b.name)),
+    }));
+
+  return NextResponse.json(
+    {
+      updatedAt: new Date().toISOString(),
+      categories,
+    },
+    {
+      headers: {
+        "Cache-Control": "no-store, max-age=0",
+      },
+    }
+  );
+}

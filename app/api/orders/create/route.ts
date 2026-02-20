@@ -2,15 +2,20 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe"; // ✅ ADD
 
+export const runtime = "nodejs";
+
 function must(name: string) {
   const v = process.env[name];
   if (!v) throw new Error(`Missing env var: ${name}`);
   return v;
 }
-
 const stripe = new Stripe(must("STRIPE_SECRET_KEY"), {
   apiVersion: "2023-10-16",
 });
+
+function getStripe() {
+  return new Stripe(must("STRIPE_SECRET_KEY"), { apiVersion: "2023-10-16" });
+}
 
 type IncomingItem = {
   id?: string;
