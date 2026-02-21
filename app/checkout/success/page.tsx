@@ -275,6 +275,16 @@ export default function CheckoutSuccess() {
             ? supa.total_cents
             : Math.round(mergedTotal * 100);      
 
+        const scheduledISO =
+          supa?.pickup_scheduled_at ??
+          supa?.pickupScheduledAt ??
+          (last as any)?.pickup_scheduled_at ??
+          (last as any)?.pickupScheduledAt ??
+          last.pickupTimeISO ??
+          null;
+
+        const computedPickupMode: "asap" | "schedule" = scheduledISO ? "schedule" : "asap";        
+
         const finalOrder: Order = {
           ...last,
           customerName: String(supa?.customerName ?? supa?.customer_name ?? last.customerName ?? ""),
@@ -309,10 +319,10 @@ export default function CheckoutSuccess() {
 
         // ✅ log goes here (AFTER the object)
         console.log("✅ finalOrder pickup fields:", {
-          pickupMode: finalOrder.pickupMode,
-          pickupTimeISO: finalOrder.pickupTimeISO,
-          pickupScheduledAt: (finalOrder as any).pickupScheduledAt,
-          pickup_scheduled_at: (finalOrder as any).pickup_scheduled_at,
+          pickupMode: computedPickupMode,
+          pickupTimeISO: scheduledISO ?? undefined,
+          pickup_scheduled_at: supa?.pickup_scheduled_at ?? (last as any)?.pickup_scheduled_at,
+          pickupScheduledAt: supa?.pickupScheduledAt ?? (last as any)?.pickupScheduledAt,
         });
 
         // 4) Lock paid order + clear cart/order keys
@@ -337,33 +347,25 @@ export default function CheckoutSuccess() {
     };
   }, []);
 
-    const pickupText = useMemo(() => {
-      if (!order) return "";
+  const pickupText = useMemo(() => {
+    if (!order) return "";
 
-      const mode =
-        (order as any).pickupMode ??
-        (order as any).pickup_mode ??
-        "asap";
+    const scheduledISO =
+      (order as any).pickup_scheduled_at ??
+      (order as any).pickupScheduledAt ??
+      order.pickupTimeISO ??
+      null;
 
-      const scheduledISO =
-        (order as any).pickupScheduledAt ??
-        (order as any).pickup_scheduled_at ??
-        order.pickupTimeISO;
-
-      // ✅ Only show Scheduled when mode is schedule
-      if (mode === "schedule") {
-        if (scheduledISO) {
-          const d = new Date(scheduledISO);
-          if (!Number.isNaN(d.getTime())) {
-            return `Scheduled: ${d.toLocaleString()}`;
-          }
-        }
-        return "Scheduled: Selected time";
+    if (scheduledISO) {
+      const d = new Date(scheduledISO);
+      if (!Number.isNaN(d.getTime())) {
+        return `Scheduled: ${d.toLocaleString()}`;
       }
+      return "Scheduled: Selected time";
+    }
 
-      // ✅ Otherwise ALWAYS show ASAP
-      return `ASAP (~${(order as any).waitMinutes ?? order.estimateMin ?? 35} min)`;
-    }, [order]);
+    return `ASAP (~${(order as any).waitMinutes ?? order.estimateMin ?? 35} min)`;
+  }, [order]);
 
   if (status === "loading") {
     return <div style={{ maxWidth: 720, margin: "40px auto", padding: 20 }}>Verifying payment…</div>;

@@ -29,7 +29,7 @@ export default async function SuccessPage({
     ? await supabase
         .from("orders")
         .select(
-          "id, order_number, status, payment_status, subtotal_cents, tax_cents, total_cents, paid_at"
+          "id, order_number, status, payment_status, subtotal_cents, tax_cents, total_cents, paid_at, pickup_scheduled_at, estimated_ready_at"
         )
         .eq("id", orderId)
         .single()
@@ -53,7 +53,10 @@ export default async function SuccessPage({
       <SuccessClient />
 
       <h1>Payment received ✅</h1>
-      <SuccessPickupClient />
+      <SuccessPickupClient
+        pickupScheduledAt={order?.pickup_scheduled_at ?? null}
+        estimatedReadyAt={order?.estimated_ready_at ?? null}
+      />
 
       {!orderId ? (
         <p style={{ color: "crimson" }}>Missing orderId in URL.</p>
