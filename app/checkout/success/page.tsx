@@ -337,25 +337,33 @@ export default function CheckoutSuccess() {
     };
   }, []);
 
-  const pickupText = useMemo(() => {
-    if (!order) return "";
+    const pickupText = useMemo(() => {
+      if (!order) return "";
 
-    const scheduledISO =
-      (order as any).pickupScheduledAt ??
-      (order as any).pickup_scheduled_at ??
-      order.pickupTimeISO;
+      const mode =
+        (order as any).pickupMode ??
+        (order as any).pickup_mode ??
+        "asap";
 
-    // ✅ if we have a scheduled time, show it first
-    if (scheduledISO) {
-      const d = new Date(scheduledISO);
-      if (!Number.isNaN(d.getTime())) {
-        return `Scheduled: ${d.toLocaleString()}`;
+      const scheduledISO =
+        (order as any).pickupScheduledAt ??
+        (order as any).pickup_scheduled_at ??
+        order.pickupTimeISO;
+
+      // ✅ Only show Scheduled when mode is schedule
+      if (mode === "schedule") {
+        if (scheduledISO) {
+          const d = new Date(scheduledISO);
+          if (!Number.isNaN(d.getTime())) {
+            return `Scheduled: ${d.toLocaleString()}`;
+          }
+        }
+        return "Scheduled: Selected time";
       }
-    }
 
-    // fallback to ASAP
-    return `ASAP (~${(order as any).waitMinutes ?? order.estimateMin ?? 35} min)`;
-  }, [order]);
+      // ✅ Otherwise ALWAYS show ASAP
+      return `ASAP (~${(order as any).waitMinutes ?? order.estimateMin ?? 35} min)`;
+    }, [order]);
 
   if (status === "loading") {
     return <div style={{ maxWidth: 720, margin: "40px auto", padding: 20 }}>Verifying payment…</div>;

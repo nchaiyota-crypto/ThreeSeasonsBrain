@@ -424,7 +424,15 @@ useEffect(() => {
 
             <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Payment</div>
 
-            <div style={{ padding: 12, border: "1px solid #eee", borderRadius: 14 }}>
+            <div
+              style={{
+                padding: 12,
+                border: "1px solid var(--border)",
+                borderRadius: 14,
+                background: "var(--card)",
+                color: "var(--foreground)",
+              }}
+            >
               <PaymentElement />
             </div>
 

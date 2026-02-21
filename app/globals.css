@@ -1,28 +1,35 @@
 :root {
   --background: #ffffff;
-  --foreground: #171717;
-
-  --card: #fafafa;
+  --foreground: #111827;
+  --card: #ffffff;
   --border: #e5e7eb;
-  --muted: #444;  /* or #555 */
 
-  --btn: #111;
-  --btnText: #fff;
-  --btnAltBg: #fff;
-  --btnAltText: #111;
+  --btn: #111827;
+  --btnText: #ffffff;
 
-  --heroOverlayFrom: rgba(0,0,0,0.75);
-  --heroOverlayTo: rgba(0,0,0,0.25);
+  --btnAltBg: #f3f4f6;
+  --btnAltText: #111827;
+
+  --heroOverlayFrom: rgba(0,0,0,0.55);
+  --heroOverlayTo: rgba(0,0,0,0.10);
 }
 
+/* Dark mode */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0b0b0b;
-    --card: #161616;
-    --border: rgba(255,255,255,0.14);
+    --background: #0b1220;
+    --foreground: #f9fafb;
+    --card: #111827;
+    --border: #374151;
 
-    --foreground: #f2f2f2;   /* main text */
-    --muted: #c9c9c9;        /* secondary text (NOT too dark) */
+    --btn: #f9fafb;
+    --btnText: #111827;
+
+    --btnAltBg: #111827;
+    --btnAltText: #f9fafb;
+
+    --heroOverlayFrom: rgba(0,0,0,0.75);
+    --heroOverlayTo: rgba(0,0,0,0.20);
   }
 }
 

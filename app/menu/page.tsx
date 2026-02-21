@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { menuItems, type MenuItem, type MenuOption } from "./menuData";
 import { useRouter } from "next/navigation";
 import { fetchWaitStatus, type GetWaitStatusResponse } from "@/lib/waitStatus";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 type CartLine = {
   key: string; // unique per option combo
@@ -267,6 +269,10 @@ function localValueToISOString(localValue: string) {
   return dt.toISOString();
 }
 
+function toLocalYMD(d: Date) {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
 /** ---------------------------
  * Schedule helpers (uses BUSINESS_HOURS)
  * -------------------------- */
@@ -277,9 +283,14 @@ function buildDateOptions() {
   for (let i = 0; i <= MAX_DAYS_AHEAD; i++) {
     const d = new Date(now);
     d.setDate(now.getDate() + i);
-    days.push(d.toISOString().slice(0, 10));
+    days.push(toLocalYMD(d)); // ✅ LOCAL (fixes 2/21 bug)
   }
   return days;
+}
+
+function isClosedDate(d: Date) {
+  const dayKey = d.getDay() as DayKey;
+  return !!BUSINESS_HOURS[dayKey]?.closed;
 }
 
 function pad2(n: number) {
@@ -1319,25 +1330,45 @@ export default function MenuPage() {
                   <div style={{ marginTop: 10 }}>
                     <div style={{ fontWeight: 900, marginBottom: 6 }}>Select pickup day</div>
 
-                    <input
-                      type="date"
-                      value={pickupDate}
-                      min={buildDateOptions()[0] ?? undefined}
-                      max={buildDateOptions()[buildDateOptions().length - 1] ?? undefined}
-                      onChange={(e) => setPickupDate(e.target.value)}
-                      style={{
-                        width: "100%",
-                        height: 42,
-                        borderRadius: 12,
-                        border: "1px solid var(--border)",
-                        background: "var(--card)",
-                        color: "var(--foreground)",
-                        padding: "0 10px",
-                        outline: "none",
-                        fontWeight: 700,
-                        
-                      }}
-                    />
+                  {(() => {
+                    const dates = buildDateOptions();
+                    const minStr = dates[0];
+                    const maxStr = dates[dates.length - 1];
+
+                    const minDate = minStr ? parseLocalDate(minStr) : new Date();
+                    const maxDate = maxStr ? parseLocalDate(maxStr) : new Date();
+
+                    return (
+                      <DatePicker
+                        selected={pickupDate ? parseLocalDate(pickupDate) : minDate}
+                        onChange={(d: Date | null) => {
+                          if (!d) return;
+                          setPickupDate(toLocalYMD(d)); // ✅ keep pickupDate as "YYYY-MM-DD"
+                        }}
+                        minDate={minDate}
+                        maxDate={maxDate}
+                        filterDate={(d) => !isClosedDate(d)}
+                        dateFormat="yyyy-MM-dd"
+                        popperPlacement="bottom-start"
+                        wrapperClassName="w-full"
+                        customInput={
+                          <input
+                            style={{
+                              width: "100%",
+                              height: 42,
+                              borderRadius: 12,
+                              border: "1px solid var(--border)",
+                              background: "var(--card)",
+                              color: "var(--foreground)",
+                              padding: "0 10px",
+                              outline: "none",
+                              fontWeight: 700,
+                            }}
+                          />
+                        }
+                      />
+                    );
+                  })()}
 
                     <div style={{ marginTop: 10, fontWeight: 900, marginBottom: 6 }}>Select pickup time</div>
 

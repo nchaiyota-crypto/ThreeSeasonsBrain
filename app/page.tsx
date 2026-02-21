@@ -103,8 +103,7 @@ export default function HomePage() {
           style={{
             position: "absolute",
             inset: 0,
-            background:
-              "linear-gradient(90deg, var(--heroOverlayFrom), var(--heroOverlayTo))",
+            background: "linear-gradient(90deg, rgba(0,0,0,0.75), rgba(0,0,0,0.15))",
           }}
         />
 
@@ -114,7 +113,7 @@ export default function HomePage() {
             maxWidth: 1200,
             margin: "0 auto",
             padding: isMobile ? "56px 16px" : "80px 18px",
-            color: "var(--btnText)",
+            color: "#fff",
           }}
         >
           <div style={{ maxWidth: 650 }}>
@@ -208,11 +207,13 @@ export default function HomePage() {
                   padding: "0 18px",
                   borderRadius: 12,
                   border: "1px solid rgba(255,255,255,0.35)",
-                  color: "var(--btnText)",
+                  background: "rgba(255,255,255,0.08)",
+                  color: "#fff",
                   display: "inline-flex",
                   alignItems: "center",
                   fontWeight: 900,
                   textDecoration: "none",
+                  backdropFilter: "blur(6px)",
                 }}
               >
                 Our story

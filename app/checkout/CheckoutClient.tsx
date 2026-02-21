@@ -5,6 +5,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import CheckoutForm from "./CheckoutForm";
 import OrderSummary from "./OrderSummary";
+import type { StripeElementsOptions } from "@stripe/stripe-js";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 function money(n: number) {
@@ -93,9 +94,21 @@ export default function CheckoutClient() {
   const [clientSecret, setClientSecret] = useState<string>("");
   const [err, setErr] = useState<string>("");
   const [order, setOrder] = useState<LastOrder | null>(null);
+  const [isDark, setIsDark] = useState(false);
 
-useEffect(() => {
-  let alive = true;
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const apply = () => setIsDark(mq.matches);
+
+    apply();
+    mq.addEventListener?.("change", apply);
+    return () => mq.removeEventListener?.("change", apply);
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
 
   async function run() {
     try {
@@ -125,7 +138,15 @@ useEffect(() => {
   };
 }, []);
 
-  const options = useMemo(() => ({ clientSecret }), [clientSecret]);
+  const options = useMemo<StripeElementsOptions>(
+    () => ({
+      clientSecret,
+      appearance: {
+        theme: isDark ? "night" : "stripe",
+      },
+    }),
+    [clientSecret, isDark]
+  );
 
   if (err) {
     return (
@@ -154,16 +175,17 @@ useEffect(() => {
       {/* ✅ Breakdown (matches success style) */}
       {order ? (
         <div
-          style={{
-            marginBottom: 14,
-            padding: 14,
-            border: "1px solid #eee",
-            borderRadius: 14,
-            background: "#fafafa",
-          }}
+        style={{
+          marginBottom: 14,
+          padding: 14,
+          border: `1px solid ${isDark ? "#374151" : "#e5e7eb"}`,
+          borderRadius: 14,
+          background: isDark ? "#111827" : "#fafafa",
+          color: isDark ? "#f9fafb" : "#111827",
+        }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-            <div style={{ opacity: 0.75 }}>Subtotal</div>
+            <div style={{ color: isDark ? "#e5e7eb" : "#6b7280" }}>Subtotal</div>
             <div style={{ fontWeight: 900 }}>${Number(order.subtotal ?? 0).toFixed(2)}</div>
           </div>
 
@@ -179,7 +201,7 @@ useEffect(() => {
               </div>
           </div>
 
-          <div style={{ height: 1, background: "#e9e9e9", margin: "10px 0" }} />
+          <div style={{ height: 1, background: isDark ? "#374151" : "#e5e7eb", margin: "10px 0" }} />
 
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <div style={{ opacity: 0.75 }}>Total (before tip)</div>
