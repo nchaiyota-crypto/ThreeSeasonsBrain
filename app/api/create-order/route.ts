@@ -41,9 +41,6 @@ export async function POST(req: Request) {
 
     // ✅ visible schedule showing on KDS
     // ✅ normalize + accept multiple key names
-    const pickupModeRaw = body.pickupMode ?? body.pickup_mode ?? "asap";
-    const pickupMode = String(pickupModeRaw).toLowerCase(); // "asap" | "schedule"
-
     const pickupScheduledAtRaw =
       body.pickupScheduledAt ??
       body.pickup_scheduled_at ??
@@ -51,39 +48,46 @@ export async function POST(req: Request) {
       body.pickup_at ??
       null;
 
+    // Server decides mode from presence of a valid scheduled time
+    let pickupMode: "asap" | "schedule" = "asap";
+    let pickupScheduledAtValue: string | null = null;
+
+    if (pickupScheduledAtRaw) {
+      const d = new Date(pickupScheduledAtRaw);
+
+      if (Number.isNaN(d.getTime())) {
+        return NextResponse.json(
+          { error: "Invalid pickupScheduledAt" },
+          { status: 400 }
+        );
+      }
+
+      // prevent scheduling in the past (allow 60 sec tolerance)
+      if (d.getTime() < Date.now() - 60_000) {
+        return NextResponse.json(
+          { error: "pickupScheduledAt is in the past" },
+          { status: 400 }
+        );
+      }
+
+      pickupMode = "schedule";
+      pickupScheduledAtValue = d.toISOString();
+    }
+
     const now = new Date();
     const waitMinutes = Number(body.waitMinutes ?? body.etaMinutes ?? 35);
     const waitMs = (Number.isFinite(waitMinutes) ? waitMinutes : 35) * 60_000;
 
-    // ✅ compute pickup_scheduled_at correctly
-    let pickupScheduledAtValue: string;
-
-    if (pickupMode === "schedule") {
-      if (!pickupScheduledAtRaw) {
-        return NextResponse.json(
-          { error: "Missing pickupScheduledAt for scheduled pickup" },
-          { status: 400 }
-        );
-      }
-      const d = new Date(pickupScheduledAtRaw);
-      if (Number.isNaN(d.getTime())) {
-        return NextResponse.json({ error: "Invalid pickupScheduledAt" }, { status: 400 });
-      }
-      pickupScheduledAtValue = d.toISOString();
-    } else {
-      pickupScheduledAtValue = now.toISOString(); // ASAP => store now
-    }
-
     // ✅ estimated_ready_at
     let estimatedReadyAt: Date;
     if (pickupMode === "schedule") {
-      estimatedReadyAt = new Date(new Date(pickupScheduledAtValue).getTime() + waitMs);
+      // pickupScheduledAtValue is guaranteed non-null here
+      estimatedReadyAt = new Date(new Date(pickupScheduledAtValue!).getTime() + waitMs);
     } else {
       estimatedReadyAt = new Date(now.getTime() + waitMs);
     }
 
     console.log("✅ pickup computed:", {
-      pickupModeRaw,
       pickupMode,
       pickupScheduledAtRaw,
       pickupScheduledAtValue,

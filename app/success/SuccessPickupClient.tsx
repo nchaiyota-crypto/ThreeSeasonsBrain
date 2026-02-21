@@ -1,19 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-
-type LastOrder = {
-  pickupMode?: "asap" | "schedule";
-  pickupTimeISO?: string; // "YYYY-MM-DDTHH:mm" (local)
-  estimateMin?: number;
-};
-
-function formatSlot(localValue: string) {
-  const [datePart, timePart] = localValue.split("T");
-  const [y, m, d] = datePart.split("-").map(Number);
-  const [hh, mm] = timePart.split(":").map(Number);
-  const dt = new Date(y, (m ?? 1) - 1, d ?? 1, hh ?? 0, mm ?? 0, 0, 0);
-
+function fmt(dt: Date) {
   return dt.toLocaleString([], {
     weekday: "short",
     month: "short",
@@ -23,32 +10,25 @@ function formatSlot(localValue: string) {
   });
 }
 
-export default function SuccessPickupClient() {
-  const [last, setLast] = useState<LastOrder | null>(null);
+export default function SuccessPickupClient({
+  pickupScheduledAt,
+  estimatedReadyAt,
+}: {
+  pickupScheduledAt: string | null;
+  estimatedReadyAt: string | null;
+}) {
+  let line = "Pickup ASAP";
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("last_order");
-      if (!raw) return;
-      setLast(JSON.parse(raw));
-    } catch {}
-  }, []);
-
-  const line = useMemo(() => {
-    if (!last) return null;
-
-    if (last.pickupMode === "schedule" && last.pickupTimeISO) {
-      return `Scheduled pickup: ${formatSlot(last.pickupTimeISO)}`;
-    }
-
-    if (typeof last.estimateMin === "number") {
-      return `Pickup ASAP: ready in ~${last.estimateMin} minutes`;
-    }
-
-    return "Pickup ASAP";
-  }, [last]);
-
-  if (!line) return null;
+  if (pickupScheduledAt) {
+    const d = new Date(pickupScheduledAt);
+    line = `Scheduled pickup: ${fmt(d)}`;
+  } else if (estimatedReadyAt) {
+    const d = new Date(estimatedReadyAt);
+    line = `Pickup ASAP: ready ~${d.toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit",
+    })}`;
+  }
 
   return (
     <div
