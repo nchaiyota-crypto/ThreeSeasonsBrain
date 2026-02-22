@@ -124,6 +124,14 @@ const RAW_MENU_ITEMS: MenuItem[] = [
   }),
 
   makeItem({
+    id: "firecracker_prawn",
+    name: "Firecracker Prawn (7 pcs)",
+    description: "Spicy Crispy Prawns, Jalapeño, Carrot, Green Onion and casew nut",
+    price: 13.95,
+    category: "Appetizer",
+  }),
+
+  makeItem({
     id: "cream_cheese_wonton",
     name: "Cream Cheese Wonton (7 pcs)",
     description: "Crispy wonton stuffed with crab meat, cream cheese, green onion",
@@ -187,6 +195,14 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     category: "Appetizer",
   }),
 
+    makeItem({
+    id: "garlic_noodle",
+    name: "Garlic Noodles",
+    description: "Egg noodle Tossed with Garlic Butter Sauce, Parmesan Cheese and Green Onion",
+    price: 8.95,
+    category: "Appetizer",
+  }),
+
   makeItem({
     id: "green_papaya_salad",
     name: "Green Papaya Salad (Som Tum)",
@@ -200,7 +216,7 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     name: "Chicken Salad (Larb Gai)",
     description:
       "Ground chicken, red onion, cilantro, green onion, rice powder mixed with lime dressing",
-    price: 13.95,
+    price: 15.95,
     category: "Salad",
   }),
 
@@ -209,7 +225,7 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     name: "Mango Salad",
     description:
       "Sliced mango, onion, cilantro, carrot, cucumber, cashew nut mixed with lime dressing, topped with steamed prawns",
-    price: 13.95,
+    price: 14.95,
     category: "Salad",
   }),
 
@@ -270,6 +286,14 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     category: "Entrée",
   }),
 
+    makeItem({
+    id: "eggplant_delight",
+    name: "Eggplant Delight",
+    description: "Eggplant, carrot, bell pepper, onion and basil",
+    price: 14.95,
+    category: "Entrée",
+  }),
+
   makeItem({
     id: "pad_thai",
     name: "Pad Thai",
@@ -282,7 +306,7 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     id: "pad_see_ew",
     name: "Pad See Ew",
     description: "Flat rice noodle, egg, Chinese broccoli, sweet soy sauce",
-    price: 15.95,
+    price: 14.95,
     category: "Noodle/Fried Rice",
   }),
 
@@ -290,7 +314,15 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     id: "drunken_noodle",
     name: "Drunken Noodle",
     description: "Flat rice noodle, egg, onion, bell pepper, basil, chili",
-    price: 15.95,
+    price: 14.95,
+    category: "Noodle/Fried Rice",
+  }),
+
+    makeItem({
+    id: "chow_mien_noodle",
+    name: "Chow Mien Noodle",
+    description: "Egg noodle, sesame oil, broccoli, carrot, mushroom, baby corn and bean sprout",
+    price: 14.95,
     category: "Noodle/Fried Rice",
   }),
 
@@ -314,7 +346,7 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     id: "crab_fried_rice",
     name: "Crab Fried Rice",
     description: "Crab meat, jasmine rice, egg, onion, carrot and green onion",
-    price: 14.95,
+    price: 20.95,
     category: "Noodle/Fried Rice",
   }),
 
@@ -354,7 +386,7 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     id: "pumpkin_curry",
     name: "Pumpkin Curry",
     description: "Red curry sauce, onion, bell pepper, basil and pumpkin",
-    price: 14.95,
+    price: 15.95,
     category: "Curry",
   }),
 
@@ -536,7 +568,7 @@ const RAW_MENU_ITEMS: MenuItem[] = [
   makeItem({
     id: "brown_rice",
     name: "Brown Rice",
-    price: 3.75,
+    price: 4.00,
     category: "Side Order",
   }),
 
