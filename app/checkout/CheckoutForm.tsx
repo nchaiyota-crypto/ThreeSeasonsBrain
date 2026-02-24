@@ -18,6 +18,7 @@ export default function CheckoutForm() {
   const [tipCustom, setTipCustom] = useState<string>(""); // dollars as string
   const [baseTotal, setBaseTotal] = useState<number>(0);
   const [customerPhone, setCustomerPhone] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
   const [smsOptIn, setSmsOptIn] = useState(true);
   const [subtotal, setSubtotal] = useState<number>(0);
   const [tax, setTax] = useState<number>(0);
@@ -43,6 +44,7 @@ useEffect(() => {
     setBaseTotal(Number((sub + tx + fee).toFixed(2)));
 
     if (o?.customerName) setCustomerName(o.customerName);
+    if (o?.customerEmail) setCustomerEmail(o.customerEmail);
     if (o?.customerPhone) setCustomerPhone(o.customerPhone);
     if (typeof o?.smsOptIn === "boolean") setSmsOptIn(o.smsOptIn);
 
@@ -68,19 +70,23 @@ useEffect(() => {
           ...o,
           customerName,
           customerPhone,
+          customerEmail,
           smsOptIn,
         })
       );
 
       // save to DB only if name exists
-      if (customerName.trim()) {
+      const email = customerEmail.trim().toLowerCase();
+
+      if (email.includes("@")) {
         await fetch("/api/orders/customer", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             orderId: o.orderId,
-            customerName: customerName.trim(),
+            customerName: customerName.trim() || null,
             customerPhone: phoneE164 ?? null,
+            customerEmail: email,
             smsOptIn,
           }),
         });
@@ -91,7 +97,7 @@ useEffect(() => {
   }, 500);
 
   return () => clearTimeout(t);
-}, [customerName, customerPhone, smsOptIn]);
+}, [customerName, customerPhone, customerEmail, smsOptIn]);
 
     // ✅ Read base total from last_order (what Stripe is currently charging)
   const custom = tipCustom.trim() === "" ? 0 : Number.parseFloat(tipCustom);
@@ -146,6 +152,12 @@ useEffect(() => {
     }
     setNameError("");
 
+    const email = customerEmail.trim().toLowerCase();
+    if (!email || !email.includes("@")) {
+      setMessage("Please enter a valid email for receipt & updates.");
+      return;
+    }
+
     // ✅ Get orderId for success page
     let orderId: string | undefined;
     try {
@@ -177,6 +189,7 @@ useEffect(() => {
               orderId,
               customerName: name,
               customerPhone: phoneE164,
+              customerEmail: email,
               smsOptIn,
             }),
           });
@@ -233,6 +246,7 @@ useEffect(() => {
           const o = JSON.parse(raw);
           o.customerName = name;
           o.customerPhone = phoneE164 ?? ""; // ✅ normalized (or blank)
+          o.customerEmail = email;
           o.smsOptIn = smsOptIn;
           localStorage.setItem("last_order", JSON.stringify(o));
         }
@@ -311,6 +325,32 @@ useEffect(() => {
               />
               {nameError ? <div style={{ color: "#e11d48", fontSize: 12 }}>{nameError}</div> : null}
             </div>
+
+            <div style={{ display: "grid", gap: 6 }}>
+              <label style={{ fontSize: 13, fontWeight: 800, opacity: 0.8 }}>
+                Email (for receipt & updates)
+              </label>
+
+              <input
+                type="email"
+                value={customerEmail}
+                onChange={(e) => setCustomerEmail(e.target.value)}
+                placeholder="e.g. you@example.com"
+                autoComplete="email"
+                required
+                style={{
+                  height: 44,
+                  borderRadius: 12,
+                  padding: "0 12px",
+                  outline: "none",
+                  border: "1px solid var(--border)",
+                  background: "var(--card)",
+                  color: "var(--foreground)",
+                  fontWeight: 700,
+                }}
+              />
+            </div>
+
             {/* ✅ Phone + SMS opt-in */}
             <div style={{ display: "grid", gap: 6 }}>
               <label style={{ fontSize: 13, fontWeight: 800, opacity: 0.8 }}>

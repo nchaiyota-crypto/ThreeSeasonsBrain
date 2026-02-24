@@ -22,6 +22,11 @@ type LastOrder = {
   tax: number;
   total: number;
 
+  serviceFee?: number;
+  service_fee?: number;
+  onlineServiceFee?: number;
+  service_fee_cents?: number;
+
   pickupMode: "asap" | "schedule";
   pickupDate?: string;
   pickupTimeISO?: string;
@@ -138,15 +143,16 @@ export default function CheckoutClient() {
   };
 }, []);
 
-  const options = useMemo<StripeElementsOptions>(
-    () => ({
+  const options = useMemo<StripeElementsOptions | undefined>(() => {
+    if (!clientSecret) return undefined;
+
+    return {
       clientSecret,
       appearance: {
         theme: isDark ? "night" : "stripe",
       },
-    }),
-    [clientSecret, isDark]
-  );
+    };
+  }, [clientSecret, isDark]);
 
   if (err) {
     return (
