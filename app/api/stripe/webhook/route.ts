@@ -55,21 +55,30 @@ export async function POST(req: Request) {
       const baseAmount = Number(pi.metadata?.base_amount_cents ?? (amount - tipCents));
 
       // 1) Mark order as paid
-      const { error: updErr } = await supabase
+      const { data: updated, error: updErr } = await supabase
         .from("orders")
         .update({
           ...(customerName ? { customer_name: customerName } : {}),
           payment_status: "paid",
-          status: "paid",                // ✅ allowed by constraint
-          total_cents: baseAmount, // ✅ optional, see note below
+          status: "paid",
+          total_cents: baseAmount,
           tip_cents: tipCents,
           paid_at: new Date().toISOString(),
-          stripe_payment_intent_id: pi.id, // ✅ if you have this column (recommended)
-        })    
-        .eq("id", orderId);
+          stripe_payment_intent_id: pi.id,
+        })
+        .eq("id", orderId)
+        .select("id, status, payment_status")
+        .maybeSingle();
 
       if (updErr) {
         return NextResponse.json({ error: "Failed to update order", details: updErr.message }, { status: 500 });
+      }
+
+      if (!updated) {
+        // 🔥 THIS is the smoking gun when environments don’t match
+        console.error("❌ Webhook: orderId not found in this DB:", orderId);
+        console.error("❌ NEXT_PUBLIC_SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
+        return NextResponse.json({ received: true, warning: "order_not_found" });
       }
 
       const { data: orderMeta, error: orderMetaErr } = await supabase
