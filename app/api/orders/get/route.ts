@@ -72,7 +72,7 @@ export async function GET(req: Request) {
   const { data: lineItems } = await supabase
     .from("order_items")
     .select("menu_item_name, qty, base_price_cents, options_summary, special_instructions")
-    .eq("order_id", orderId);
+    .eq("order_id", (data as any).id);
 
   const items = (lineItems ?? []).map((it: any) => ({
     key: `${it.menu_item_name}-${it.qty}-${it.base_price_cents}`,
@@ -101,6 +101,11 @@ export async function GET(req: Request) {
   const total_with_tip_cents =
     Number((data as any).total_with_tip_cents ?? 0) || (total_cents + tip_cents);
 
+  const pickup_scheduled_at =
+  (data as any).pickup_scheduled_at ??
+  (data as any).pickupScheduledAt ??
+  null;
+
   return NextResponse.json({
     orderNumber: (data as any).order_number ?? (data as any).orderNumber ?? "",
     items,
@@ -121,8 +126,10 @@ export async function GET(req: Request) {
     total_cents,
     total_with_tip_cents,
 
-    pickupMode: (data as any).pickup_mode ?? (data as any).pickupMode ?? "asap",
-    pickupTimeISO: (data as any).pickup_time_iso ?? (data as any).pickupTimeISO ?? null,
+    pickup_scheduled_at,
+    pickupScheduledAt: pickup_scheduled_at,   // alias for your frontend merge
+    pickupTimeISO: pickup_scheduled_at ?? (data as any).pickup_time_iso ?? (data as any).pickupTimeISO ?? null,
+    pickupMode: pickup_scheduled_at ? "schedule" : ((data as any).pickup_mode ?? (data as any).pickupMode ?? "asap"),
     estimateMin: (data as any).estimate_min ?? (data as any).estimateMin ?? null,
 
     stripe_client_secret: (data as any).stripe_client_secret ?? null,
