@@ -204,7 +204,7 @@ const RAW_MENU_ITEMS: MenuItem[] = [
 
     makeItem({
     id: "garlic_noodle",
-    name: "Garlic Noodle)",
+    name: "Garlic Noodle",
     description: "Egg noodle Tossed with fresh Garlic and Top with Parmesan Cheese",
     price: 8.95,
     category: "Appetizer",
