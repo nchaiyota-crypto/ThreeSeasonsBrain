@@ -131,6 +131,14 @@ const RAW_MENU_ITEMS: MenuItem[] = [
   }),
 
   makeItem({
+    id: "firecracker_prawn",
+    name: "Firecracker Prawn(7 pcs)",
+    description: "Spicy crispy Prawns, jalapeno, Green onion and Cashew nut",
+    price: 13.95,
+    category: "Appetizer",
+  }),
+
+  makeItem({
     id: "cream_cheese_wonton",
     name: "Cream Cheese Wonton (7 pcs)",
     description: "Crispy wonton stuffed with crab meat, cream cheese, green onion",
@@ -191,6 +199,14 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     name: "3 Season Chicken Wings (7 pcs)",
     description: "Chicken wings with homemade sweet & sour sauce",
     price: 12.95,
+    category: "Appetizer",
+  }),
+
+    makeItem({
+    id: "garlic_noodle",
+    name: "Garlic Noodle)",
+    description: "Egg noodle Tossed with fresh Garlic and Top with Parmesan Cheese",
+    price: 8.95,
     category: "Appetizer",
   }),
 
@@ -289,7 +305,7 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     id: "pad_see_ew",
     name: "Pad See Ew",
     description: "Flat rice noodle, egg, Chinese broccoli, sweet soy sauce",
-    price: 15.95,
+    price: 14.95,
     category: "Noodle/Fried Rice",
   }),
 
@@ -297,7 +313,7 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     id: "drunken_noodle",
     name: "Drunken Noodle",
     description: "Flat rice noodle, egg, onion, bell pepper, basil, chili",
-    price: 15.95,
+    price: 14.95,
     category: "Noodle/Fried Rice",
   }),
 
@@ -321,7 +337,7 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     id: "crab_fried_rice",
     name: "Crab Fried Rice",
     description: "Crab meat, jasmine rice, egg, onion, carrot and green onion",
-    price: 14.95,
+    price: 20.95,
     category: "Noodle/Fried Rice",
   }),
 
@@ -361,7 +377,7 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     id: "pumpkin_curry",
     name: "Pumpkin Curry",
     description: "Red curry sauce, onion, bell pepper, basil and pumpkin",
-    price: 14.95,
+    price: 15.95,
     category: "Curry",
   }),
 
@@ -543,7 +559,7 @@ const RAW_MENU_ITEMS: MenuItem[] = [
   makeItem({
     id: "brown_rice",
     name: "Brown Rice",
-    price: 3.75,
+    price: 4.00,
     category: "Side Order",
   }),
 

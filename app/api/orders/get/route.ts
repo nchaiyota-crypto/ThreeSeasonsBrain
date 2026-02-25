@@ -107,6 +107,7 @@ export async function GET(req: Request) {
   null;
 
   return NextResponse.json({
+    __version: "get-route-2026-02-25-v3",
     orderNumber: (data as any).order_number ?? (data as any).orderNumber ?? "",
     items,
     customerName: (data as any).customer_name ?? (data as any).customerName ?? null,
