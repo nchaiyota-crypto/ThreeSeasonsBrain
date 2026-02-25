@@ -20,7 +20,15 @@ export async function POST(req: Request) {
 
     const customerName = String(body.customerName ?? body.customer_name ?? "").trim() || null;
     const customerPhone = body.customerPhone ?? body.customer_phone ?? null;
+
+    const customerEmailRaw = String(body.customerEmail ?? body.customer_email ?? "").trim();
+    const customerEmail = customerEmailRaw ? customerEmailRaw.toLowerCase() : null;
+    
     const smsOptIn = !!(body.smsOptIn ?? body.sms_opt_in);
+
+    if (customerEmail && !customerEmail.includes("@")) {
+      return NextResponse.json({ error: "Invalid customerEmail" }, { status: 400 });
+    }
 
     const supabase = createClient(
       must("NEXT_PUBLIC_SUPABASE_URL"),
@@ -35,13 +43,15 @@ export async function POST(req: Request) {
     sms_opt_in: smsOptIn,
     };
     if (customerName) patchOrders.customer_name = customerName;
+    if (customerEmail) patchOrders.customer_email = customerEmail;
 
     const { data: orderRow, error: ordErr } = await supabase
     .from("orders")
     .update(patchOrders)
     .eq("id", orderId)
-    .select("id, order_number, customer_name, customer_phone, sms_opt_in")
+    .select("id, order_number, customer_name, customer_phone, customer_email, sms_opt_in")
     .single();
+
     console.log("✅ orders updated:", orderRow, "err:", ordErr?.message);
 
     if (ordErr) {
