@@ -78,6 +78,7 @@ const OPT_THAI_PUFF_FILLING_REQUIRED: MenuOption = {
 const REQUIRED_FILLING_IDS = new Set(["thai_puff"]);
 const REQUIRED_SOUP_IDS = new Set(["tom_yum_soup", "coconut_milk_soup"]); // Tom Yum + Tom Kha
 const REGULAR_PROTEIN_REQUIRED_CATEGORIES = new Set(["Entrée", "Curry", "Noodle/Fried Rice"]);
+const NON_REQUIRED_PROTEIN_IDS = new Set(["crab_fried_rice"]);
 
 /**
  * Default options:
@@ -92,6 +93,12 @@ function getDefaultOptionsForItem(item: MenuItem): MenuOption[] {
   if (REQUIRED_FILLING_IDS.has(item.id)) {
     return [OPT_THAI_PUFF_FILLING_REQUIRED];
   }
+
+      // ✅ Exception: not required protein (still allow add-ons)
+  if (NON_REQUIRED_PROTEIN_IDS.has(item.id)) {
+    return [OPT_PROTEIN_ADDON, OPT_VEGETABLE_ADDON];
+  }
+  
   // Soups
   if (item.category === "Soup") {
     if (REQUIRED_SOUP_IDS.has(item.id)) {
@@ -121,14 +128,6 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     description: "Hot & sour soup with choice of protein, mushroom, tomato, onion and cilantro",
     price: 13.95,
     category: "Soup",
-  }),
-
-  makeItem({
-    id: "firecracker_prawn",
-    name: "Firecracker Prawn (7 pcs)",
-    description: "Spicy Crispy Prawns, Jalapeño, Carrot, Green Onion and casew nut",
-    price: 13.95,
-    category: "Appetizer",
   }),
 
   makeItem({
@@ -195,14 +194,6 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     category: "Appetizer",
   }),
 
-    makeItem({
-    id: "garlic_noodle",
-    name: "Garlic Noodles",
-    description: "Egg noodle Tossed with Garlic Butter Sauce, Parmesan Cheese and Green Onion",
-    price: 8.95,
-    category: "Appetizer",
-  }),
-
   makeItem({
     id: "green_papaya_salad",
     name: "Green Papaya Salad (Som Tum)",
@@ -216,7 +207,7 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     name: "Chicken Salad (Larb Gai)",
     description:
       "Ground chicken, red onion, cilantro, green onion, rice powder mixed with lime dressing",
-    price: 15.95,
+    price: 13.95,
     category: "Salad",
   }),
 
@@ -225,7 +216,7 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     name: "Mango Salad",
     description:
       "Sliced mango, onion, cilantro, carrot, cucumber, cashew nut mixed with lime dressing, topped with steamed prawns",
-    price: 14.95,
+    price: 13.95,
     category: "Salad",
   }),
 
@@ -286,14 +277,6 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     category: "Entrée",
   }),
 
-    makeItem({
-    id: "eggplant_delight",
-    name: "Eggplant Delight",
-    description: "Eggplant, carrot, bell pepper, onion and basil",
-    price: 14.95,
-    category: "Entrée",
-  }),
-
   makeItem({
     id: "pad_thai",
     name: "Pad Thai",
@@ -306,7 +289,7 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     id: "pad_see_ew",
     name: "Pad See Ew",
     description: "Flat rice noodle, egg, Chinese broccoli, sweet soy sauce",
-    price: 14.95,
+    price: 15.95,
     category: "Noodle/Fried Rice",
   }),
 
@@ -314,15 +297,7 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     id: "drunken_noodle",
     name: "Drunken Noodle",
     description: "Flat rice noodle, egg, onion, bell pepper, basil, chili",
-    price: 14.95,
-    category: "Noodle/Fried Rice",
-  }),
-
-    makeItem({
-    id: "chow_mien_noodle",
-    name: "Chow Mien Noodle",
-    description: "Egg noodle, sesame oil, broccoli, carrot, mushroom, baby corn and bean sprout",
-    price: 14.95,
+    price: 15.95,
     category: "Noodle/Fried Rice",
   }),
 
@@ -346,7 +321,7 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     id: "crab_fried_rice",
     name: "Crab Fried Rice",
     description: "Crab meat, jasmine rice, egg, onion, carrot and green onion",
-    price: 20.95,
+    price: 14.95,
     category: "Noodle/Fried Rice",
   }),
 
@@ -386,7 +361,7 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     id: "pumpkin_curry",
     name: "Pumpkin Curry",
     description: "Red curry sauce, onion, bell pepper, basil and pumpkin",
-    price: 15.95,
+    price: 14.95,
     category: "Curry",
   }),
 
@@ -568,7 +543,7 @@ const RAW_MENU_ITEMS: MenuItem[] = [
   makeItem({
     id: "brown_rice",
     name: "Brown Rice",
-    price: 4.00,
+    price: 3.75,
     category: "Side Order",
   }),
 
