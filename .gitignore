@@ -48,3 +48,5 @@ next-env.d.ts
 *.bk
 .env.local.backup*
 backups/
+
+supabase/.branches/
