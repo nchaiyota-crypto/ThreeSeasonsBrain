@@ -379,7 +379,7 @@ useEffect(() => {
                   gap: 10,
                   alignItems: "center",
                   fontSize: 12,
-                  opacity: 0.9,
+                  opacity: 1,
                 }}
               >
                 <input
