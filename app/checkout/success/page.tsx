@@ -275,12 +275,13 @@ export default function CheckoutSuccess() {
             ? supa.total_cents
             : Math.round(mergedTotal * 100);      
 
+        // Use ONLY the DB value to determine if scheduled — never fall back to pickupTimeISO
+        // because ASAP orders can have pickupTimeISO set from browsing the schedule tab
         const scheduledISO =
           supa?.pickup_scheduled_at ??
           supa?.pickupScheduledAt ??
           (last as any)?.pickup_scheduled_at ??
           (last as any)?.pickupScheduledAt ??
-          last.pickupTimeISO ??
           null;
 
         const computedPickupMode: "asap" | "schedule" = scheduledISO ? "schedule" : "asap";        
@@ -304,10 +305,8 @@ export default function CheckoutSuccess() {
             last.pickupMode ??
             "asap") as any,
 
-          pickupTimeISO:
-            supa?.pickup_scheduled_at ??
-            supa?.pickupScheduledAt ??
-            last.pickupTimeISO,
+          // Only carry over pickupTimeISO for scheduled orders — clear it for ASAP
+          pickupTimeISO: scheduledISO ?? undefined,
 
           estimateMin:
             supa?.estimate_min ??
@@ -350,10 +349,10 @@ export default function CheckoutSuccess() {
   const pickupText = useMemo(() => {
     if (!order) return "";
 
+    // Only use DB-authoritative fields — not pickupTimeISO which can be stale for ASAP orders
     const scheduledISO =
       (order as any).pickup_scheduled_at ??
       (order as any).pickupScheduledAt ??
-      order.pickupTimeISO ??
       null;
 
     if (scheduledISO) {

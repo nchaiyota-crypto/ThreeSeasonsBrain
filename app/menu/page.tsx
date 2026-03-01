@@ -608,14 +608,13 @@ export default function MenuPage() {
   const filteredItems = useMemo(() => {
     const s = search.trim().toLowerCase();
     return menuItems.filter((item) => {
-      if (outOfStockIds.has(String(item.id))) return false; // 86'd — hide from customers
       const inCategory = item.category === activeCategory;
       if (!inCategory) return false;
       if (!s) return true;
       const hay = `${item.name} ${item.description ?? ""}`.toLowerCase();
       return hay.includes(s);
     });
-  }, [search, activeCategory, outOfStockIds]);
+  }, [search, activeCategory]);
 
   function addDirectToCart(item: MenuItem) {
     const key = `${item.id}|no-options`;
@@ -1052,7 +1051,9 @@ export default function MenuPage() {
 
           {/* ✅ PUT YOUR MENU LIST HERE */}
           <div style={{ display: "grid", gap: 12 }}>
-            {filteredItems.map((item) => (
+            {filteredItems.map((item) => {
+              const isOut = outOfStockIds.has(String(item.id));
+              return (
               <div
                 key={item.id}
                 style={{
@@ -1062,6 +1063,7 @@ export default function MenuPage() {
                   display: "flex",
                   gap: 12,
                   alignItems: "center",
+                  opacity: isOut ? 0.55 : 1,
                 }}
               >
                 {item.imageUrl ? (
@@ -1080,27 +1082,33 @@ export default function MenuPage() {
                     <div style={{ marginTop: 4, fontSize: 13, opacity: 0.75 }}>{item.description}</div>
                   ) : null}
                   <div style={{ marginTop: 6, fontWeight: 900 }}>${money(item.price)}</div>
+                  {isOut && (
+                    <div style={{ marginTop: 4, fontSize: 12, fontWeight: 700, color: "#e53e3e" }}>
+                      Out of Stock
+                    </div>
+                  )}
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => openWizard(item)}
+                  onClick={() => !isOut && openWizard(item)}
+                  disabled={isOut}
                   style={{
                     height: 42,
                     padding: "0 14px",
                     borderRadius: 12,
                     border: "none",
-                    background: "var(--btn)",
-                    color: "var(--btnText)",
+                    background: isOut ? "#ccc" : "var(--btn)",
+                    color: isOut ? "#888" : "var(--btnText)",
                     fontWeight: 900,
-                    cursor: "pointer",
+                    cursor: isOut ? "not-allowed" : "pointer",
                     whiteSpace: "nowrap",
                   }}
                 >
-                  Add
+                  {isOut ? "Out" : "Add"}
                 </button>
               </div>
-            ))}
+            )})}
           </div>
         </div>
 
