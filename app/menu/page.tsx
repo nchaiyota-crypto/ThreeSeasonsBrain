@@ -402,6 +402,17 @@ export default function MenuPage() {
   const [activeCategory, setActiveCategory] = useState<string>(allCategories[0] ?? "House Specials");
   const router = useRouter();
 
+  // 86 Board — out-of-stock items fetched from /api/menu/86 on load
+  const [outOfStockIds, setOutOfStockIds] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    fetch("/api/menu/86")
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d?.item_ids)) setOutOfStockIds(new Set(d.item_ids));
+      })
+      .catch(() => {}); // fail silently — show all items if fetch fails
+  }, []);
+
   // ---------------------------
   // Modal/Wizard state
   // ---------------------------
@@ -597,13 +608,14 @@ export default function MenuPage() {
   const filteredItems = useMemo(() => {
     const s = search.trim().toLowerCase();
     return menuItems.filter((item) => {
+      if (outOfStockIds.has(String(item.id))) return false; // 86'd — hide from customers
       const inCategory = item.category === activeCategory;
       if (!inCategory) return false;
       if (!s) return true;
       const hay = `${item.name} ${item.description ?? ""}`.toLowerCase();
       return hay.includes(s);
     });
-  }, [search, activeCategory]);
+  }, [search, activeCategory, outOfStockIds]);
 
   function addDirectToCart(item: MenuItem) {
     const key = `${item.id}|no-options`;
