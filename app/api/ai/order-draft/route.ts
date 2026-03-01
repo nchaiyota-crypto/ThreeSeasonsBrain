@@ -11,8 +11,7 @@ function must(name: string) {
   return v;
 }
 
-const stripe = new Stripe(must("STRIPE_SECRET_KEY"), { apiVersion: "2023-10-16" });
-const resend = new Resend(must("RESEND_API_KEY"));
+// Initialized inside the handler so env vars are only read at request time, not build time
 
 type AiDraftReq = {
   customerName: string;
@@ -34,6 +33,9 @@ type AiDraftReq = {
 
 export async function POST(req: Request) {
   try {
+    const stripe = new Stripe(must("STRIPE_SECRET_KEY"), { apiVersion: "2023-10-16" });
+    const resend = new Resend(must("RESEND_API_KEY"));
+
     const body = (await req.json()) as AiDraftReq;
 
     // Basic validation
