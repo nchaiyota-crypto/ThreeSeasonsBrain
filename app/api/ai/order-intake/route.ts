@@ -106,8 +106,8 @@ export async function POST(req: Request) {
         tax_cents,
         total_cents,
 
-        // optional: set payment_amount_cents now or only when paid
-        payment_amount_cents: payment_status === "paid" ? total_cents : null,
+        // payment_amount_cents set to null at creation; filled in when payment is confirmed
+        payment_amount_cents: null,
       })
       .select("*")
       .single();
