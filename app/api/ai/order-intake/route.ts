@@ -11,11 +11,9 @@ function must(name: string) {
   return v;
 }
 
+// All clients initialized inside the handler — env vars read at request time, not build time
 const supabaseAdmin = () =>
   createClient(must("NEXT_PUBLIC_SUPABASE_URL"), must("SUPABASE_SERVICE_ROLE_KEY"));
-
-const stripe = new Stripe(must("STRIPE_SECRET_KEY"), { apiVersion: "2023-10-16" });
-const resend = new Resend(must("RESEND_API_KEY"));
 
 type IntakeReq = {
   customer_name: string;
@@ -145,6 +143,8 @@ export async function POST(req: Request) {
     let checkoutUrl: string | null = null;
 
     if (body.payment_choice === "pay_now") {
+      const stripe = new Stripe(must("STRIPE_SECRET_KEY"), { apiVersion: "2023-10-16" });
+      const resend = new Resend(must("RESEND_API_KEY"));
       const siteUrl = must("NEXT_PUBLIC_SITE_URL");
 
       const session = await stripe.checkout.sessions.create({
