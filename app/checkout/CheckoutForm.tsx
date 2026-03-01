@@ -379,7 +379,7 @@ useEffect(() => {
                   gap: 10,
                   alignItems: "center",
                   fontSize: 12,
-                  opacity: 0.8,
+                  opacity: 1,
                 }}
               >
                 <input
@@ -387,8 +387,23 @@ useEffect(() => {
                   checked={smsOptIn}
                   onChange={(e) => setSmsOptIn(e.target.checked)}
                 />
-                Text me order confirmation and pickup updates.
+                I agree to receive SMS order updates (confirmation, acceptance, ready).
               </label>
+
+              {/* ✅ A2P CTA disclosure (REQUIRED) */}
+              <div style={{ fontSize: 12, lineHeight: 1.35, opacity: 0.75 }}>
+                Message frequency varies. Msg &amp; data rates may apply. Reply <b>STOP</b> to opt out,
+                reply <b>HELP</b> for help. By checking this box, you consent to receive transactional
+                SMS about your order. See our{" "}
+                <a href="/privacy-policy" target="_blank" rel="noreferrer">
+                  Privacy Policy
+                </a>{" "}
+                and{" "}
+                <a href="/terms" target="_blank" rel="noreferrer">
+                  Terms
+                </a>
+                .
+              </div>
             </div>
 
                   {/* ✅ Tip */}
