@@ -170,6 +170,33 @@ export async function POST(req: Request) {
       } catch (err: any) {
         console.error("❌ KDS insert exception:", err?.message ?? err);
       }
+
+      // ── Send receipt email via send-order-email edge function ─────────────
+      // Fires for both regular online orders and AI phone pay_now orders.
+      // The edge function handles deduplication via email_paid_sent_at column.
+      try {
+        const supabaseUrl = must("NEXT_PUBLIC_SUPABASE_URL");
+        const serviceKey  = must("SUPABASE_SERVICE_ROLE_KEY");
+        const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-order-email`, {
+          method: "POST",
+          headers: {
+            "Content-Type":  "application/json",
+            "Authorization": `Bearer ${serviceKey}`,
+            "apikey":        serviceKey,
+          },
+          body: JSON.stringify({ orderId, type: "paid" }),
+        });
+        if (!emailRes.ok) {
+          const txt = await emailRes.text();
+          console.error("⚠️ receipt email failed:", emailRes.status, txt);
+        } else {
+          console.log("✅ receipt email sent for order:", orderId);
+        }
+      } catch (emailErr: any) {
+        // Never let email failure break the webhook response
+        console.error("⚠️ receipt email exception:", emailErr?.message);
+      }
+
       return NextResponse.json({ received: true });
 
     }

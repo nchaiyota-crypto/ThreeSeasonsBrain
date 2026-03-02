@@ -156,7 +156,7 @@ export async function POST(req: Request) {
       .eq("id", orderId);
 
     // ---- Email the payment link via Resend ----
-    const from = must("RESEND_FROM");
+    const from = must("RESEND_FROM_EMAIL"); // ✅ consistent with send-order-email edge function
     const link = session.url;
 
     await resend.emails.send({
