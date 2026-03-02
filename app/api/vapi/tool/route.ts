@@ -139,17 +139,17 @@ async function toolGetWaitTime(): Promise<string> {
     }
 
     const status = data.status ?? "normal";
-    const waitMap: Record<string, string> = {
-      normal:    "about 15 to 20 minutes",
-      busy:      "about 30 to 40 minutes",
-      very_busy: "about 45 to 55 minutes",
-      rush:      "about 60 minutes or more",
+    const waitMap: Record<string, { text: string; label: string }> = {
+      normal:    { text: "about 15 minutes",    label: "normal" },
+      busy:      { text: "about 30 to 40 minutes", label: "busy" },
+      very_busy: { text: "about 45 to 55 minutes", label: "very_busy" },
+      rush:      { text: "60 minutes or more",  label: "rush" },
     };
-    const waitText = waitMap[status] ?? "about 20 minutes";
+    const wait = waitMap[status] ?? { text: "about 15 minutes", label: "normal" };
 
-    return `The kitchen is open and current wait time is ${waitText} for takeout orders.`;
+    return `[STATUS:${wait.label}] The kitchen is open. Current wait time is ${wait.text} for takeout orders.`;
   } catch {
-    return "The kitchen is open. Current wait time is approximately 20 to 30 minutes.";
+    return "[STATUS:normal] The kitchen is open. Current wait time is about 15 minutes for takeout orders.";
   }
 }
 
