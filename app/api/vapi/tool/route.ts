@@ -9,7 +9,7 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { menuItems } from "../../menu/menuData";
+import { menuItems } from "../../../menu/menuData";
 
 export const runtime = "nodejs";
 
