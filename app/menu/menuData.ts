@@ -293,6 +293,14 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     category: "Entrée",
   }),
 
+    makeItem({
+    id: "garlic_and_pepper",
+    name: "Garlic and Pepper",
+    description: "Fresh Garlic, Black Pepper, Carrot and Broccoli",
+    price: 14.95,
+    category: "Entrée",
+  }),
+
   makeItem({
     id: "pad_thai",
     name: "Pad Thai",
@@ -313,6 +321,14 @@ const RAW_MENU_ITEMS: MenuItem[] = [
     id: "drunken_noodle",
     name: "Drunken Noodle",
     description: "Flat rice noodle, egg, onion, bell pepper, basil, chili",
+    price: 14.95,
+    category: "Noodle/Fried Rice",
+  }),
+
+    makeItem({
+    id: "chow_mein_noodle",
+    name: "Chow Mein Noodle",
+    description: "Egg Noodle, Sesame Oil, Broccoli, Carrot, Mushroom, BabyCorn and Bean Sprout",
     price: 14.95,
     category: "Noodle/Fried Rice",
   }),
